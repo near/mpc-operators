@@ -59,6 +59,16 @@
       font-size: 0.85rem;
       font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
     }
+    input[type="text"][hidden] { display: none; }
+    select {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 8px;
+      padding: 8px 10px;
+      font-size: 0.85rem;
+      cursor: pointer;
+    }
     .btn {
       background: var(--accent-2);
       color: var(--text);
@@ -92,8 +102,9 @@
         <button data-network="testnet">Testnet</button>
       </div>
       <div class="rpc-field">
-        <label for="rpcUrl">RPC</label>
-        <input type="text" id="rpcUrl" spellcheck="false" />
+        <label for="rpcPreset">RPC</label>
+        <select id="rpcPreset"></select>
+        <input type="text" id="rpcUrl" spellcheck="false" placeholder="https://your-rpc-endpoint" />
       </div>
       <button class="btn" id="refreshBtn">Refresh</button>
     </div>
@@ -115,9 +126,26 @@
   <script>
     // --- Config -----------------------------------------------------------
     const NETWORKS = {
-      mainnet: { contract: "v1.signer",              rpc: "https://free.rpc.fastnear.com" },
-      testnet: { contract: "v1.signer-prod.testnet", rpc: "https://test.rpc.fastnear.com" },
+      mainnet: { contract: "v1.signer" },
+      testnet: { contract: "v1.signer-prod.testnet" },
     };
+
+    // Public RPC presets per network (all verified to serve the `state` call).
+    // First entry is the default. A "Custom…" option is appended automatically.
+    const PRESETS = {
+      mainnet: [
+        { label: "FastNear (recommended)", url: "https://free.rpc.fastnear.com" },
+        { label: "NEAR.org",               url: "https://rpc.mainnet.near.org" },
+        { label: "Lava Network",           url: "https://near.lava.build" },
+        { label: "dRPC",                   url: "https://near.drpc.org" },
+      ],
+      testnet: [
+        { label: "FastNear (recommended)", url: "https://test.rpc.fastnear.com" },
+        { label: "NEAR.org",               url: "https://rpc.testnet.near.org" },
+        { label: "dRPC",                   url: "https://near-testnet.drpc.org" },
+      ],
+    };
+    const CUSTOM = "__custom__";
 
     // Account ID -> human-friendly operator name. Best-guesses; edit freely.
     // Covers both mainnet (.near) and testnet (.testnet) accounts.
@@ -151,11 +179,41 @@
 
     const els = {
       toggle: document.getElementById("networkToggle"),
+      preset: document.getElementById("rpcPreset"),
       rpc: document.getElementById("rpcUrl"),
       refresh: document.getElementById("refreshBtn"),
       status: document.getElementById("status"),
       tbody: document.getElementById("tableBody"),
     };
+
+    // Build the preset dropdown for a network and select its default.
+    function populatePresets(network) {
+      els.preset.replaceChildren();
+      for (const p of PRESETS[network]) {
+        const opt = document.createElement("option");
+        opt.value = p.url;
+        opt.textContent = p.label;
+        els.preset.appendChild(opt);
+      }
+      const custom = document.createElement("option");
+      custom.value = CUSTOM;
+      custom.textContent = "Custom…";
+      els.preset.appendChild(custom);
+      els.preset.value = PRESETS[network][0].url;
+      syncCustomInput();
+    }
+
+    // Show the free-entry field only when "Custom…" is selected.
+    function syncCustomInput() {
+      const isCustom = els.preset.value === CUSTOM;
+      els.rpc.hidden = !isCustom;
+      if (isCustom) els.rpc.focus();
+    }
+
+    // The RPC URL currently in effect.
+    function effectiveRpc() {
+      return els.preset.value === CUSTOM ? els.rpc.value.trim() : els.preset.value;
+    }
 
     // --- RPC --------------------------------------------------------------
     async function fetchState(rpcUrl, contract) {
@@ -262,7 +320,12 @@
     // --- Load -------------------------------------------------------------
     async function load() {
       const net = NETWORKS[currentNetwork];
-      const rpcUrl = els.rpc.value.trim() || net.rpc;
+      const rpcUrl = effectiveRpc();
+      if (!rpcUrl) {
+        renderMessage("Enter a custom RPC URL.");
+        setStatus("No RPC endpoint specified.", true);
+        return;
+      }
       setStatus("Loading " + net.contract + " from " + rpcUrl + " …", false);
       els.refresh.disabled = true;
       try {
@@ -293,7 +356,7 @@
       for (const btn of els.toggle.querySelectorAll("button")) {
         btn.classList.toggle("active", btn.dataset.network === network);
       }
-      els.rpc.value = NETWORKS[network].rpc; // reset to network default
+      populatePresets(network); // reset presets to the network's default
       load();
     }
 
@@ -302,11 +365,12 @@
       const btn = e.target.closest("button[data-network]");
       if (btn && btn.dataset.network !== currentNetwork) selectNetwork(btn.dataset.network);
     });
+    els.preset.addEventListener("change", () => { syncCustomInput(); load(); });
     els.refresh.addEventListener("click", load);
     els.rpc.addEventListener("keydown", (e) => { if (e.key === "Enter") load(); });
 
     // Init
-    els.rpc.value = NETWORKS[currentNetwork].rpc;
+    populatePresets(currentNetwork);
     load();
   </script>
 </body>
