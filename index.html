@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>NEAR MPC Participants</title>
+  <style>
+    :root {
+      --bg: #0f1115;
+      --panel: #1a1d24;
+      --border: #2a2f3a;
+      --text: #e6e9ef;
+      --muted: #9aa3b2;
+      --accent: #5b8cff;
+      --accent-2: #1f2733;
+      --error: #ff6b6b;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+    .wrap { max-width: 960px; margin: 0 auto; padding: 32px 20px 64px; }
+    h1 { font-size: 1.5rem; margin: 0 0 4px; }
+    .sub { color: var(--muted); margin: 0 0 24px; font-size: 0.9rem; }
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 16px;
+      margin-bottom: 16px;
+    }
+    .toggle { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+    .toggle button {
+      background: transparent;
+      color: var(--muted);
+      border: none;
+      padding: 8px 16px;
+      font-size: 0.9rem;
+      cursor: pointer;
+    }
+    .toggle button.active { background: var(--accent); color: #fff; }
+    .rpc-field { display: flex; flex: 1 1 320px; gap: 8px; align-items: center; min-width: 280px; }
+    .rpc-field label { color: var(--muted); font-size: 0.85rem; white-space: nowrap; }
+    input[type="text"] {
+      flex: 1;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 8px;
+      padding: 8px 10px;
+      font-size: 0.85rem;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+    .btn {
+      background: var(--accent-2);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 16px;
+      font-size: 0.9rem;
+      cursor: pointer;
+    }
+    .btn:hover { border-color: var(--accent); }
+    .status { font-size: 0.85rem; color: var(--muted); margin: 8px 2px 16px; min-height: 1.2em; }
+    .status.error { color: var(--error); }
+    table { width: 100%; border-collapse: collapse; background: var(--panel); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    th, td { text-align: left; padding: 12px 14px; border-bottom: 1px solid var(--border); font-size: 0.9rem; vertical-align: top; }
+    th { color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; font-size: 0.72rem; }
+    tr:last-child td { border-bottom: none; }
+    td.account, td.url { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.82rem; }
+    td.url a { color: var(--accent); text-decoration: none; word-break: break-all; }
+    td.url a:hover { text-decoration: underline; }
+    .empty td { color: var(--muted); text-align: center; padding: 24px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>NEAR MPC Participants</h1>
+    <p class="sub">Live participant set from the MPC signer contract's <code>state</code> view function.</p>
+
+    <div class="controls">
+      <div class="toggle" id="networkToggle">
+        <button data-network="mainnet" class="active">Mainnet</button>
+        <button data-network="testnet">Testnet</button>
+      </div>
+      <div class="rpc-field">
+        <label for="rpcUrl">RPC</label>
+        <input type="text" id="rpcUrl" spellcheck="false" />
+      </div>
+      <button class="btn" id="refreshBtn">Refresh</button>
+    </div>
+
+    <div class="status" id="status"></div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Operator Name</th>
+          <th>Account</th>
+          <th>URL</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+  </div>
+
+  <script>
+    // --- Config -----------------------------------------------------------
+    const NETWORKS = {
+      mainnet: { contract: "v1.signer",              rpc: "https://free.rpc.fastnear.com" },
+      testnet: { contract: "v1.signer-prod.testnet", rpc: "https://test.rpc.fastnear.com" },
+    };
+
+    // Account ID -> human-friendly operator name. Best-guesses; edit freely.
+    // Covers both mainnet (.near) and testnet (.testnet) accounts.
+    const OPERATORS = {
+      // mainnet
+      "blacksandtech.near": "BlackSand Tech",
+      "mpc-lgns.near": "Logos",
+      "multichain-mainnet-aurora.near": "Aurora",
+      "near-mpc-staking4all-01.near": "Staking4all",
+      "nodemonster.near": "Node Monster",
+      "n1-multichain.near": "N1",
+      "everstake-mpc-1.near": "Everstake",
+      "stakin-mpc.near": "Stakin",
+      "mpch-01.near": "MPCH",
+      // testnet
+      "mpc-lgns.testnet": "Logos",
+      "near-mpc-staking4all-01.testnet": "Staking4all",
+      "n1-multichain.testnet": "N1",
+      "nodemonster.testnet": "Node Monster",
+      "everstake-mpc.testnet": "Everstake",
+      "stakin-mpc2.testnet": "Stakin",
+      "bst-near.testnet": "BlackSand Tech",
+      "aurora-multichain.testnet": "Aurora",
+      "mpch-01.testnet": "MPCH",
+      "svrn-01.testnet": "Sovereign",
+      "greenfield-keeper.testnet": "Greenfield",
+    };
+
+    // --- State ------------------------------------------------------------
+    let currentNetwork = "mainnet";
+
+    const els = {
+      toggle: document.getElementById("networkToggle"),
+      rpc: document.getElementById("rpcUrl"),
+      refresh: document.getElementById("refreshBtn"),
+      status: document.getElementById("status"),
+      tbody: document.getElementById("tableBody"),
+    };
+
+    // --- RPC --------------------------------------------------------------
+    async function fetchState(rpcUrl, contract) {
+      const body = {
+        jsonrpc: "2.0",
+        id: "mpc-info",
+        method: "query",
+        params: {
+          request_type: "call_function",
+          finality: "final",
+          account_id: contract,
+          method_name: "state",
+          args_base64: "e30=", // base64 of "{}"
+        },
+      };
+      const resp = await fetch(rpcUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (!resp.ok) throw new Error("HTTP " + resp.status + " " + resp.statusText);
+      const json = await resp.json();
+      if (json.error) {
+        throw new Error(json.error.message || JSON.stringify(json.error));
+      }
+      const result = json.result;
+      if (result && result.error) throw new Error(result.error);
+      if (!result || !Array.isArray(result.result)) {
+        throw new Error("Unexpected RPC response shape");
+      }
+      const text = new TextDecoder().decode(new Uint8Array(result.result));
+      return JSON.parse(text);
+    }
+
+    // Extract [account, id, {url,...}] tuples from the contract state.
+    function getParticipants(state) {
+      const running = state && state.Running;
+      const tuples = running &&
+        running.parameters &&
+        running.parameters.participants &&
+        running.parameters.participants.participants;
+      if (!Array.isArray(tuples)) return null; // not in Running state
+      return tuples.map((t) => ({
+        account: t[0],
+        url: (t[2] && t[2].url ? String(t[2].url).trim() : ""),
+        name: OPERATORS[t[0]] || t[0],
+      }));
+    }
+
+    // --- Render -----------------------------------------------------------
+    function setStatus(msg, isError) {
+      els.status.textContent = msg;
+      els.status.classList.toggle("error", !!isError);
+    }
+
+    function renderRows(participants) {
+      els.tbody.replaceChildren();
+      if (!participants.length) {
+        renderMessage("No participants found.");
+        return;
+      }
+      participants
+        .slice()
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .forEach((p) => {
+          const tr = document.createElement("tr");
+
+          const nameTd = document.createElement("td");
+          nameTd.textContent = p.name;
+
+          const accTd = document.createElement("td");
+          accTd.className = "account";
+          accTd.textContent = p.account;
+
+          const urlTd = document.createElement("td");
+          urlTd.className = "url";
+          if (p.url) {
+            const a = document.createElement("a");
+            a.href = p.url;
+            a.target = "_blank";
+            a.rel = "noopener noreferrer";
+            a.textContent = p.url;
+            urlTd.appendChild(a);
+          } else {
+            urlTd.textContent = "—";
+          }
+
+          tr.append(nameTd, accTd, urlTd);
+          els.tbody.appendChild(tr);
+        });
+    }
+
+    function renderMessage(msg) {
+      els.tbody.replaceChildren();
+      const tr = document.createElement("tr");
+      tr.className = "empty";
+      const td = document.createElement("td");
+      td.colSpan = 3;
+      td.textContent = msg;
+      tr.appendChild(td);
+      els.tbody.appendChild(tr);
+    }
+
+    // --- Load -------------------------------------------------------------
+    async function load() {
+      const net = NETWORKS[currentNetwork];
+      const rpcUrl = els.rpc.value.trim() || net.rpc;
+      setStatus("Loading " + net.contract + " from " + rpcUrl + " …", false);
+      els.refresh.disabled = true;
+      try {
+        const state = await fetchState(rpcUrl, net.contract);
+        const participants = getParticipants(state);
+        if (participants === null) {
+          const variant = state ? Object.keys(state)[0] : "unknown";
+          renderMessage("Contract is not in Running state (current: " + variant + ").");
+          setStatus("Loaded — contract state is \"" + variant + "\".", false);
+          return;
+        }
+        renderRows(participants);
+        setStatus(
+          participants.length + " participants · " + net.contract +
+          " · updated " + new Date().toLocaleTimeString(),
+          false
+        );
+      } catch (err) {
+        renderMessage("Failed to load.");
+        setStatus("Error: " + (err && err.message ? err.message : String(err)), true);
+      } finally {
+        els.refresh.disabled = false;
+      }
+    }
+
+    function selectNetwork(network) {
+      currentNetwork = network;
+      for (const btn of els.toggle.querySelectorAll("button")) {
+        btn.classList.toggle("active", btn.dataset.network === network);
+      }
+      els.rpc.value = NETWORKS[network].rpc; // reset to network default
+      load();
+    }
+
+    // --- Wiring -----------------------------------------------------------
+    els.toggle.addEventListener("click", (e) => {
+      const btn = e.target.closest("button[data-network]");
+      if (btn && btn.dataset.network !== currentNetwork) selectNetwork(btn.dataset.network);
+    });
+    els.refresh.addEventListener("click", load);
+    els.rpc.addEventListener("keydown", (e) => { if (e.key === "Enter") load(); });
+
+    // Init
+    els.rpc.value = NETWORKS[currentNetwork].rpc;
+    load();
+  </script>
+</body>
+</html>
