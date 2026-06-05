@@ -93,8 +93,8 @@
 </head>
 <body>
   <div class="wrap">
-    <h1>NEAR MPC Participants</h1>
-    <p class="sub">Live participant set from the MPC signer contract's <code>state</code> view function.</p>
+    <h1>NEAR MPC Operators</h1>
+    <p class="sub">Live operator set from the MPC signer contract.</p>
 
     <div class="controls">
       <div class="toggle" id="networkToggle">
@@ -151,23 +151,23 @@
     // Covers both mainnet (.near) and testnet (.testnet) accounts.
     const OPERATORS = {
       // mainnet
-      "blacksandtech.near": "BlackSand Tech",
-      "mpc-lgns.near": "Logos",
+      "blacksandtech.near": "BlackSand",
+      "mpc-lgns.near": "Luganodes",
       "multichain-mainnet-aurora.near": "Aurora",
       "near-mpc-staking4all-01.near": "Staking4all",
       "nodemonster.near": "Node Monster",
-      "n1-multichain.near": "N1",
+      "n1-multichain.near": "Near One",
       "everstake-mpc-1.near": "Everstake",
       "stakin-mpc.near": "Stakin",
       "mpch-01.near": "MPCH",
       // testnet
-      "mpc-lgns.testnet": "Logos",
+      "mpc-lgns.testnet": "Luganodes",
       "near-mpc-staking4all-01.testnet": "Staking4all",
-      "n1-multichain.testnet": "N1",
+      "n1-multichain.testnet": "Near One",
       "nodemonster.testnet": "Node Monster",
       "everstake-mpc.testnet": "Everstake",
       "stakin-mpc2.testnet": "Stakin",
-      "bst-near.testnet": "BlackSand Tech",
+      "bst-near.testnet": "BlackSand",
       "aurora-multichain.testnet": "Aurora",
       "mpch-01.testnet": "MPCH",
       "svrn-01.testnet": "Sovereign",
@@ -292,7 +292,7 @@
           urlTd.className = "url";
           if (p.url) {
             const a = document.createElement("a");
-            a.href = p.url;
+            a.href = p.url + ':8080/debug/signatures';
             a.target = "_blank";
             a.rel = "noopener noreferrer";
             a.textContent = p.url;
