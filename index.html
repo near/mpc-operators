@@ -263,6 +263,21 @@
       }));
     }
 
+    // Path appended to each participant endpoint.
+    const LINK_PATH = "/debug/signatures";
+
+    // Normalize a participant URL for linking: force the http scheme and
+    // append port 8080 unless a port is already specified explicitly.
+    function buildLink(raw) {
+      let s = String(raw || "").trim();
+      if (!s) return "";
+      s = s.replace(/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//, ""); // drop any scheme
+      const slash = s.indexOf("/");
+      let authority = slash === -1 ? s : s.slice(0, slash); // strip any path
+      if (!/:\d+$/.test(authority)) authority += ":8080"; // no explicit port
+      return "http://" + authority + LINK_PATH;
+    }
+
     // --- Render -----------------------------------------------------------
     function setStatus(msg, isError) {
       els.status.textContent = msg;
@@ -290,12 +305,13 @@
 
           const urlTd = document.createElement("td");
           urlTd.className = "url";
-          if (p.url) {
+          const href = buildLink(p.url);
+          if (href) {
             const a = document.createElement("a");
-            a.href = p.url + ':8080/debug/signatures';
+            a.href = href;
             a.target = "_blank";
             a.rel = "noopener noreferrer";
-            a.textContent = p.url;
+            a.textContent = href;
             urlTd.appendChild(a);
           } else {
             urlTd.textContent = "—";
