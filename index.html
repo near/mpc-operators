@@ -80,6 +80,16 @@
       cursor: pointer;
     }
     .btn:hover { border-color: var(--accent); }
+    .quorum { display: flex; align-items: center; gap: 16px; margin: 4px 2px 16px; }
+    .quorum[hidden] { display: none; }
+    .quorum-value {
+      font-size: 2.6rem;
+      font-weight: 700;
+      line-height: 1;
+      color: var(--accent);
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+    .quorum-label { color: var(--muted); font-size: 0.85rem; }
     .status { font-size: 0.85rem; color: var(--muted); margin: 8px 2px 16px; min-height: 1.2em; }
     .status.error { color: var(--error); }
     table { width: 100%; border-collapse: collapse; background: var(--panel); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
@@ -108,6 +118,11 @@
         <input type="text" id="rpcUrl" spellcheck="false" placeholder="https://your-rpc-endpoint" />
       </div>
       <button class="btn" id="refreshBtn">Refresh</button>
+    </div>
+
+    <div class="quorum" id="quorum" hidden>
+      <span class="quorum-value" id="quorumValue">—</span>
+      <span class="quorum-label">operators required to sign<br />(threshold / total)</span>
     </div>
 
     <div class="status" id="status"></div>
@@ -184,6 +199,8 @@
       rpc: document.getElementById("rpcUrl"),
       refresh: document.getElementById("refreshBtn"),
       status: document.getElementById("status"),
+      quorum: document.getElementById("quorum"),
+      quorumValue: document.getElementById("quorumValue"),
       tbody: document.getElementById("tableBody"),
     };
 
@@ -249,19 +266,20 @@
       return JSON.parse(text);
     }
 
-    // Extract [account, id, {url,...}] tuples from the contract state.
+    // Extract the participant set and signing threshold from the contract state.
+    // Returns { threshold, participants } or null if not in the Running state.
     function getParticipants(state) {
-      const running = state && state.Running;
-      const tuples = running &&
-        running.parameters &&
-        running.parameters.participants &&
-        running.parameters.participants.participants;
+      const params = state && state.Running && state.Running.parameters;
+      const tuples = params && params.participants && params.participants.participants;
       if (!Array.isArray(tuples)) return null; // not in Running state
-      return tuples.map((t) => ({
-        account: t[0],
-        url: (t[2] && t[2].url ? String(t[2].url).trim() : ""),
-        name: OPERATORS[t[0]] || t[0],
-      }));
+      return {
+        threshold: typeof params.threshold === "number" ? params.threshold : null,
+        participants: tuples.map((t) => ({
+          account: t[0],
+          url: (t[2] && t[2].url ? String(t[2].url).trim() : ""),
+          name: OPERATORS[t[0]] || t[0],
+        })),
+      };
     }
 
     // Path appended to each participant endpoint.
@@ -283,6 +301,13 @@
     function setStatus(msg, isError) {
       els.status.textContent = msg;
       els.status.classList.toggle("error", !!isError);
+    }
+
+    // Prominent "M / N" badge: threshold of total participants.
+    function renderQuorum(threshold, total) {
+      if (threshold == null) { els.quorum.hidden = true; return; }
+      els.quorumValue.textContent = threshold + " / " + total;
+      els.quorum.hidden = false;
     }
 
     function renderRows(participants) {
@@ -347,13 +372,16 @@
       els.refresh.disabled = true;
       try {
         const state = await fetchState(rpcUrl, net.contract);
-        const participants = getParticipants(state);
-        if (participants === null) {
+        const result = getParticipants(state);
+        if (result === null) {
           const variant = state ? Object.keys(state)[0] : "unknown";
+          renderQuorum(null);
           renderMessage("Contract is not in Running state (current: " + variant + ").");
           setStatus("Loaded — contract state is \"" + variant + "\".", false);
           return;
         }
+        const { threshold, participants } = result;
+        renderQuorum(threshold, participants.length);
         renderRows(participants);
         setStatus(
           participants.length + " participants · " + net.contract +
@@ -361,6 +389,7 @@
           false
         );
       } catch (err) {
+        renderQuorum(null);
         renderMessage("Failed to load.");
         setStatus("Error: " + (err && err.message ? err.message : String(err)), true);
       } finally {
