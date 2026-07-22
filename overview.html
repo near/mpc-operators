@@ -105,8 +105,7 @@
     <p class="lead">
       NEAR's MPC network (<a href="https://docs.near.org/chain-abstraction/chain-signatures" target="_blank" rel="noopener">Chain Signatures</a>)
       lets a NEAR account sign transactions on other chains with <strong>no single party ever holding the private key</strong>.
-      The key is split across independent operators, and a signature is valid only when a threshold of them cooperate — so there is
-      no single key and no single operator that can sign alone, and the full key never exists in one place.
+      The key is split across independent operators, and a signature is valid only when a threshold of them cooperate.
     </p>
 
     <div class="stats">
@@ -127,43 +126,32 @@
 
     <h2>Who operates the nodes?</h2>
     <p>
-      Independent professional infrastructure providers — <strong>not</strong> the NEAR Foundation or NEAR Inc. The set currently
-      includes entities such as Aurora, Everstake, Luganodes, Stakin, Black Sand, Node Monster, Staking4All, MPCH, Sovereign and
-      NEAR One. The <a href="index.html">live operator page</a> lists the current members with their NEAR account IDs and node endpoints.
+      Several independent entities — <strong>not</strong> the NEAR Foundation or NEAR Inc.
+      See the <a href="index.html">live operator page</a> for the full list.
     </p>
 
     <h2>How are the key shares generated?</h2>
     <p>
-      Through a <strong>fully distributed key generation (DKG)</strong> protocol (a PedPop variant) — <strong>no trusted dealer</strong>.
-      Each operator generates its own share and the full private key is never assembled on any machine, at any point. When operators
-      join or leave, shares are <strong>reshared</strong> to the new set (the threshold can change) without changing the public key or
-      exposing the key.
-      <a href="https://github.com/near/mpc/blob/main/crates/threshold-signatures/docs/dkg.md" target="_blank" rel="noopener">DKG documentation →</a>
+      By a <strong>fully distributed</strong> key generation protocol — no trusted dealer, and the full private key never exists on
+      any machine. <a href="https://github.com/near/mpc/blob/main/crates/threshold-signatures/docs/dkg.md" target="_blank" rel="noopener">DKG details →</a>
     </p>
 
     <h2>What protects a node while it runs?</h2>
     <p>
-      MPC nodes are designed to run inside <strong>Intel TDX</strong> confidential VMs (TEEs), which isolate each key share from the
-      host OS and from the operator itself, backed by an attestation <strong>verified on-chain</strong>. Inside a TEE a node runs only
-      <strong>reproducible, on-chain-approved</strong> software, so anyone can confirm it runs the expected, unmodified code, and
-      backward secrecy is enforced (a departing operator cannot retain usable key material). <strong>TEE enforcement is being rolled
-      out across the network</strong> — the live count above shows how many operators are already running in a verified Intel TDX TEE;
-      the remainder are in the process of migrating. The network's primary security guarantee does not depend on the TEE: even without
-      it, a signature still requires a threshold of independent operators to cooperate.
+      Nodes run inside <strong>Intel TDX</strong> secure enclaves (TEEs) with attestations verified on-chain. This is being rolled out
+      across the network — the live count above shows current coverage.
     </p>
 
     <h2>How does the network change (governance)?</h2>
     <p>
-      Adding or removing an operator, or changing the threshold, is an <strong>on-chain vote</strong> by the existing operators.
-      Only after enough current operators approve does the network reshare to the new set. No single party can alter the network unilaterally.
+      Adding or removing an operator, or changing the threshold, requires an <strong>on-chain vote</strong> by the existing operators.
+      No single party can change it alone.
     </p>
 
     <h2>What if operators go offline or collude?</h2>
     <p>
-      Signing continues as long as at least the threshold number of operators are available; below that, the worst case is a
-      <strong>failed signature — not a key compromise</strong>. Forging a signature or recovering the key would require
-      <strong>colluding across at least a threshold of independent operators and defeating the TEE on each</strong> — the core
-      security assumption of the system.
+      Signing continues while a threshold of operators are available; fewer means a failed signature, <strong>not a key compromise</strong>.
+      Forging a signature would require colluding across a threshold of independent operators.
     </p>
 
     <h2>Signing schemes</h2>
