@@ -160,6 +160,18 @@
       <li><strong>Confidential key derivation</strong> / <code>BLS12-381</code>.</li>
     </ul>
 
+    <h2>Has the code been audited?</h2>
+    <p>
+      Yes. We strive to have every feature and critical code path independently audited.
+      Public reports by <a href="https://github.com/trailofbits/publications" target="_blank" rel="noopener">Trail of Bits</a>:
+    </p>
+    <ul>
+      <li><a href="https://github.com/trailofbits/publications/blob/master/reviews/2025-03-near-one-mpc-chain-signatures-securityreview.pdf" target="_blank" rel="noopener">MPC / Chain Signatures</a> — the contract and signing network.</li>
+      <li><a href="https://github.com/trailofbits/publications/blob/master/reviews/2025-05-near-one-pedpop+-securityreview.pdf" target="_blank" rel="noopener">PedPoP+</a> — the distributed key generation protocol.</li>
+      <li><a href="https://github.com/trailofbits/publications/blob/master/reviews/2025-12-near-one-confidential-key-derivation-securityreview.pdf" target="_blank" rel="noopener">Confidential Key Derivation</a> — the BLS12-381 CKD scheme.</li>
+      <li><a href="https://github.com/trailofbits/publications/blob/master/reviews/2026-02-near-one-robust-ecdsa-securityreview.pdf" target="_blank" rel="noopener">Robust ECDSA</a> — the ECDSA signing scheme.</li>
+    </ul>
+
     <div class="callout">
       <h2>Verify it yourself</h2>
       <p>The participant set and threshold are public on-chain. Query the <code>state</code> method of <code>v1.signer</code>:</p>
@@ -167,11 +179,6 @@
   state json-args {} network-config mainnet now</code></pre>
       <p>Or in the explorer: <a href="https://nearblocks.io/address/v1.signer/contract/methods" target="_blank" rel="noopener">nearblocks.io/address/v1.signer</a>
         (call <code>state</code> under Contract). The <a href="index.html">live operator page</a> renders the same data as a table.</p>
-      <p>The contract and cryptographic protocols have been independently audited by Trail of Bits:
-        <a href="https://github.com/trailofbits/publications/blob/master/reviews/2025-03-near-one-mpc-chain-signatures-securityreview.pdf" target="_blank" rel="noopener">MPC / Chain Signatures</a>,
-        <a href="https://github.com/trailofbits/publications/blob/master/reviews/2025-05-near-one-pedpop+-securityreview.pdf" target="_blank" rel="noopener">PedPoP+ (DKG)</a>,
-        <a href="https://github.com/trailofbits/publications/blob/master/reviews/2025-12-near-one-confidential-key-derivation-securityreview.pdf" target="_blank" rel="noopener">Confidential Key Derivation</a>, and
-        <a href="https://github.com/trailofbits/publications/blob/master/reviews/2026-02-near-one-robust-ecdsa-securityreview.pdf" target="_blank" rel="noopener">Robust ECDSA</a>.</p>
     </div>
 
     <div class="footer">
@@ -184,6 +191,7 @@
         <a href="https://github.com/trailofbits/publications" target="_blank" rel="noopener">Security audits (Trail of Bits)</a>
         <a href="https://nearblocks.io/address/v1.signer" target="_blank" rel="noopener">v1.signer on-chain</a>
       </div>
+      <p>Last updated 2026-07-22. Operator counts and TEE status are live from the contract.</p>
     </div>
   </div>
 
