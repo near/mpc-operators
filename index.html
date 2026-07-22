@@ -15,6 +15,7 @@
       --accent: #5b8cff;
       --accent-2: #1f2733;
       --error: #ff6b6b;
+      --ok: #4ade80;
     }
     * { box-sizing: border-box; }
     body {
@@ -100,6 +101,10 @@
     td.url a { color: var(--accent); text-decoration: none; word-break: break-all; }
     td.url a:hover { text-decoration: underline; }
     .empty td { color: var(--muted); text-align: center; padding: 24px; }
+    .tee { white-space: nowrap; font-size: 0.8rem; font-weight: 600; }
+    .tee.yes { color: var(--ok); }
+    .tee.no { color: var(--muted); }
+    .tee.unknown { color: var(--muted); }
   </style>
 </head>
 <body>
@@ -133,6 +138,7 @@
           <th>Operator Name</th>
           <th>Account</th>
           <th>URL</th>
+          <th>TEE</th>
         </tr>
       </thead>
       <tbody id="tableBody"></tbody>
@@ -239,7 +245,7 @@
     }
 
     // --- RPC --------------------------------------------------------------
-    async function fetchState(rpcUrl, contract) {
+    async function callView(rpcUrl, contract, methodName, args) {
       const body = {
         jsonrpc: "2.0",
         id: "mpc-info",
@@ -248,8 +254,8 @@
           request_type: "call_function",
           finality: "final",
           account_id: contract,
-          method_name: "state",
-          args_base64: "e30=", // base64 of "{}"
+          method_name: methodName,
+          args_base64: btoa(JSON.stringify(args || {})),
         },
       };
       const resp = await fetch(rpcUrl, {
@@ -271,6 +277,25 @@
       return JSON.parse(text);
     }
 
+    const fetchState = (rpcUrl, contract) => callView(rpcUrl, contract, "state");
+
+    // A node genuinely runs in a TEE only when its on-chain attestation is a real
+    // Intel TDX quote (the `Dstack` variant). Non-TEE nodes submit a `Mock`
+    // attestation, which still appears in `get_tee_accounts` — so we must inspect
+    // the attestation itself, per TLS key. Returns "Dstack" | "Mock" | "none",
+    // or "unknown" if the lookup fails (so we never mislabel a node).
+    async function fetchTeeStatus(rpcUrl, contract, tlsPublicKey) {
+      try {
+        const att = await callView(rpcUrl, contract, "get_attestation", {
+          tls_public_key: tlsPublicKey,
+        });
+        if (att == null) return "none";
+        return Object.keys(att)[0] || "none"; // "Dstack" or "Mock"
+      } catch (e) {
+        return "unknown";
+      }
+    }
+
     // Extract the participant set and signing threshold from the contract state.
     // Returns { threshold, participants } or null if not in the Running state.
     function getParticipants(state) {
@@ -282,6 +307,7 @@
         participants: tuples.map((t) => ({
           account: t[0],
           url: (t[2] && t[2].url ? String(t[2].url).trim() : ""),
+          tls: (t[2] && t[2].tls_public_key) || "",
           name: OPERATORS[t[0]] || t[0],
         })),
       };
@@ -315,6 +341,7 @@
       els.quorum.hidden = false;
     }
 
+    // Each participant carries a `.tee` status: "Dstack" | "Mock" | "none" | "unknown".
     function renderRows(participants) {
       els.tbody.replaceChildren();
       if (!participants.length) {
@@ -348,7 +375,26 @@
             urlTd.textContent = "—";
           }
 
-          tr.append(nameTd, accTd, urlTd);
+          const teeTd = document.createElement("td");
+          if (p.tee === "Dstack") {
+            teeTd.className = "tee yes";
+            teeTd.textContent = "✓ TDX";
+            teeTd.title = "Genuine Intel TDX attestation verified on-chain";
+          } else if (p.tee === "Mock") {
+            teeTd.className = "tee no";
+            teeTd.textContent = "no";
+            teeTd.title = "Mock attestation — not running in a TEE";
+          } else if (p.tee === "none") {
+            teeTd.className = "tee no";
+            teeTd.textContent = "no";
+            teeTd.title = "No attestation on record";
+          } else {
+            teeTd.className = "tee unknown";
+            teeTd.textContent = "—";
+            teeTd.title = "TEE status unavailable";
+          }
+
+          tr.append(nameTd, accTd, urlTd, teeTd);
           els.tbody.appendChild(tr);
         });
     }
@@ -358,7 +404,7 @@
       const tr = document.createElement("tr");
       tr.className = "empty";
       const td = document.createElement("td");
-      td.colSpan = 3;
+      td.colSpan = 4;
       td.textContent = msg;
       tr.appendChild(td);
       els.tbody.appendChild(tr);
@@ -386,11 +432,16 @@
           return;
         }
         const { threshold, participants } = result;
+        const statuses = await Promise.all(
+          participants.map((p) => fetchTeeStatus(rpcUrl, net.contract, p.tls))
+        );
+        participants.forEach((p, i) => { p.tee = statuses[i]; });
         renderQuorum(threshold, participants.length);
         renderRows(participants);
+        const inTee = participants.filter((p) => p.tee === "Dstack").length;
         setStatus(
-          participants.length + " participants · " + net.contract +
-          " · updated " + new Date().toLocaleTimeString(),
+          participants.length + " participants · " + inTee + "/" + participants.length +
+          " in TEE · " + net.contract + " · updated " + new Date().toLocaleTimeString(),
           false
         );
       } catch (err) {

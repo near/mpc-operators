@@ -118,9 +118,9 @@
         <div class="num" id="stat-total">—</div>
         <div class="lbl">independent operators<br />in the network</div>
       </div>
-      <div class="stat target">
-        <div class="num">30&nbsp;/&nbsp;21</div>
-        <div class="lbl">target operators / threshold<br />by end of 2026</div>
+      <div class="stat">
+        <div class="num" id="stat-tee">—</div>
+        <div class="lbl">operators running in a<br />verified TEE (Intel TDX)</div>
       </div>
     </div>
     <p class="stats-note" id="stats-note">Live from the <code>v1.signer</code> contract on NEAR mainnet · <a href="index.html">operator list &amp; details →</a></p>
@@ -143,11 +143,13 @@
 
     <h2>What protects a node while it runs?</h2>
     <p>
-      Nodes run inside <strong>Intel TDX</strong> confidential VMs (TEEs), isolating each key share from the host OS and the operator
-      itself. Every node publishes an <strong>on-chain-verifiable remote attestation</strong> and runs only <strong>reproducible,
-      on-chain-approved</strong> software, so anyone can confirm a node runs the expected, unmodified code. This also enforces backward
-      secrecy: a departing operator cannot retain usable key material. TEE enforcement is being rolled out across the network, with
-      attestation status tracked on-chain.
+      MPC nodes are designed to run inside <strong>Intel TDX</strong> confidential VMs (TEEs), which isolate each key share from the
+      host OS and from the operator itself, backed by an attestation <strong>verified on-chain</strong>. Inside a TEE a node runs only
+      <strong>reproducible, on-chain-approved</strong> software, so anyone can confirm it runs the expected, unmodified code, and
+      backward secrecy is enforced (a departing operator cannot retain usable key material). <strong>TEE enforcement is being rolled
+      out across the network</strong> — the live count above shows how many operators are already running in a verified Intel TDX TEE;
+      the remainder are in the process of migrating. The network's primary security guarantee does not depend on the TEE: even without
+      it, a signature still requires a threshold of independent operators to cooperate.
     </p>
 
     <h2>How does the network change (governance)?</h2>
@@ -204,7 +206,7 @@
       "https://near.lava.build",
     ];
 
-    async function fetchState(rpcUrl) {
+    async function callView(rpcUrl, method, args) {
       const resp = await fetch(rpcUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -216,8 +218,8 @@
             request_type: "call_function",
             finality: "final",
             account_id: CONTRACT,
-            method_name: "state",
-            args_base64: "e30=", // "{}"
+            method_name: method,
+            args_base64: btoa(JSON.stringify(args || {})),
           },
         }),
       });
@@ -232,14 +234,27 @@
     async function loadStats() {
       for (const rpc of RPCS) {
         try {
-          const state = await fetchState(rpc);
+          const state = await callView(rpc, "state");
           const params = state && state.Running && state.Running.parameters;
           const parts = params && params.participants && params.participants.participants;
-          if (Array.isArray(parts) && typeof params.threshold === "number") {
-            document.getElementById("stat-threshold").textContent = params.threshold;
-            document.getElementById("stat-total").textContent = parts.length;
-            return;
-          }
+          if (!Array.isArray(parts) || typeof params.threshold !== "number") continue;
+
+          document.getElementById("stat-threshold").textContent = params.threshold;
+          document.getElementById("stat-total").textContent = parts.length;
+
+          // A participant runs in a real TEE only when its on-chain attestation is a
+          // genuine Intel TDX quote (the `Dstack` variant). Non-TEE nodes submit a
+          // `Mock` attestation, so counting `get_tee_accounts` would overstate this.
+          const variants = await Promise.all(
+            parts.map((t) =>
+              callView(rpc, "get_attestation", { tls_public_key: t[2] && t[2].tls_public_key })
+                .then((att) => (att == null ? "none" : Object.keys(att)[0]))
+                .catch(() => "unknown")
+            )
+          );
+          const inTee = variants.filter((v) => v === "Dstack").length;
+          document.getElementById("stat-tee").textContent = inTee + " / " + parts.length;
+          return;
         } catch (e) {
           // try the next endpoint
         }
