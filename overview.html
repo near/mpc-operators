@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3C%3Fxml version='1.0' standalone='no'%3F%3E%3C!DOCTYPE svg PUBLIC '-//W3C//DTD SVG 20010904//EN' 'http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd'%3E%3Csvg version='1.0' xmlns='http://www.w3.org/2000/svg' width='32.000000pt' height='32.000000pt' viewBox='0 0 32.000000 32.000000' preserveAspectRatio='xMidYMid meet'%3E%3Cg transform='translate(0.000000,32.000000) scale(0.100000,-0.100000)' fill='%23000000' stroke='none'%3E%3Cpath d='M88 284 l-58 -35 0 -88 0 -89 61 -36 c33 -20 64 -36 69 -36 5 0 36 16 69 35 l61 36 0 89 0 89 -61 36 c-33 19 -65 35 -72 34 -7 0 -38 -16 -69 -35z m122 -120 c0 33 -2 37 -15 26 -19 -16 -19 -1 0 24 26 35 45 13 45 -54 0 -79 -18 -89 -63 -34 -73 88 -66 84 -67 35 0 -37 2 -42 15 -31 18 15 19 1 1 -22 -26 -35 -36 -20 -36 50 0 38 3 72 8 76 4 4 31 -19 59 -51 l53 -58 0 39z'/%3E%3C/g%3E%3C/svg%3E%0A" />
+  <title>NEAR MPC — Network &amp; Security Overview</title>
+  <style>
+    :root {
+      --bg: #0f1115;
+      --panel: #1a1d24;
+      --border: #2a2f3a;
+      --text: #e6e9ef;
+      --muted: #9aa3b2;
+      --accent: #5b8cff;
+      --accent-2: #1f2733;
+      --ok: #4ade80;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+    }
+    .wrap { max-width: 820px; margin: 0 auto; padding: 32px 20px 64px; }
+    a { color: var(--accent); }
+    h1 { font-size: 1.6rem; margin: 0 0 4px; }
+    h2 { font-size: 1.15rem; margin: 36px 0 8px; }
+    h2:first-of-type { margin-top: 28px; }
+    .sub { color: var(--muted); margin: 0 0 8px; font-size: 0.95rem; }
+    .backlink { font-size: 0.9rem; margin: 0 0 24px; }
+    p { margin: 8px 0; }
+    .lead { font-size: 1.02rem; }
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      background: var(--accent-2);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      padding: 1px 5px;
+      font-size: 0.85em;
+    }
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+      margin: 20px 0 8px;
+    }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 16px;
+    }
+    .card .k { color: var(--muted); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; margin: 0 0 4px; }
+    .card .v { font-size: 0.95rem; margin: 0; }
+    .callout {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--accent);
+      border-radius: 10px;
+      padding: 16px 18px;
+      margin: 20px 0;
+    }
+    .callout h2 { margin-top: 0; }
+    pre {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 14px;
+      overflow-x: auto;
+      margin: 12px 0;
+    }
+    pre code { background: none; border: none; padding: 0; font-size: 0.82rem; color: var(--text); }
+    ul { margin: 8px 0; padding-left: 22px; }
+    li { margin: 4px 0; }
+    .qa { margin: 4px 0 0; }
+    .footer {
+      margin-top: 44px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+    .footer a { text-decoration: none; }
+    .footer .links { display: flex; flex-wrap: wrap; gap: 8px 20px; margin-bottom: 14px; }
+    .asof { color: var(--muted); font-size: 0.85rem; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>NEAR MPC — Network &amp; Security Overview</h1>
+    <p class="sub">How the NEAR Multi-Party Computation (MPC) signing network is structured, secured, and independently verifiable.</p>
+    <p class="backlink">→ <a href="index.html">View the live operator set &amp; threshold</a></p>
+
+    <p class="lead">
+      NEAR's MPC network (also called <a href="https://docs.near.org/chain-abstraction/chain-signatures" target="_blank" rel="noopener">Chain Signatures</a>)
+      lets a NEAR account produce signatures on other chains without any single party ever holding the private key.
+      The key is split across independent operators, and a signature is only valid when a <strong>threshold</strong> of them cooperate.
+      There is <strong>no single key and no single operator</strong> that can sign on its own — and no one, at any point, holds the full key.
+    </p>
+
+    <div class="cards">
+      <div class="card">
+        <p class="k">Signing model</p>
+        <p class="v"><strong>t-of-n threshold.</strong> A valid signature needs at least <em>t</em> of the <em>n</em> operators.</p>
+      </div>
+      <div class="card">
+        <p class="k">Operators</p>
+        <p class="v"><strong>Independent entities.</strong> Not the NEAR Foundation / NEAR Inc. See the live list.</p>
+      </div>
+      <div class="card">
+        <p class="k">Key generation</p>
+        <p class="v"><strong>Fully distributed DKG.</strong> No trusted dealer; the full key never exists anywhere.</p>
+      </div>
+      <div class="card">
+        <p class="k">Node integrity</p>
+        <p class="v"><strong>Intel TDX (TEE).</strong> Attestations verified on-chain; builds reproducible.</p>
+      </div>
+      <div class="card">
+        <p class="k">Governance</p>
+        <p class="v"><strong>On-chain voting</strong> by existing operators. Membership changes trigger key resharing.</p>
+      </div>
+      <div class="card">
+        <p class="k">Source of truth</p>
+        <p class="v"><strong>On-chain.</strong> The <code>v1.signer</code> contract state is authoritative and public.</p>
+      </div>
+    </div>
+
+    <h2>How large is the network, and what is the threshold?</h2>
+    <p class="qa">
+      The network runs a <strong>t-of-n</strong> threshold scheme: producing a signature requires cooperation from at least
+      <em>t</em> of the <em>n</em> operators. Any group smaller than <em>t</em> learns <strong>nothing</strong> about the private key,
+      and cannot forge a signature.
+    </p>
+    <p class="asof">
+      As of July 2026, mainnet runs <strong>10 independent operators with a threshold of 7</strong>, with a stated target of
+      growing to <strong>30 operators and a threshold of 21</strong> by the end of 2026. Because these values change as the
+      network grows, the <a href="index.html">live operator page</a> and the on-chain contract are always the authoritative source —
+      this document intentionally does not hardcode them.
+    </p>
+
+    <h2>Who operates the nodes?</h2>
+    <p class="qa">
+      The operators are <strong>independent professional infrastructure providers</strong> — not the NEAR Foundation or NEAR Inc.
+      The set currently includes entities such as Aurora, Everstake, Luganodes, Stakin, Black Sand, Node Monster, Staking4All,
+      MPCH, Sovereign, and NEAR One. The <a href="index.html">live operator page</a> shows the current members, their NEAR
+      account IDs, and node endpoints, read directly from the contract.
+    </p>
+
+    <h2>How are the key shares generated?</h2>
+    <p class="qa">
+      Key shares are created through a <strong>fully distributed key generation (DKG)</strong> protocol — a variant of PedPop
+      (&ldquo;PedPop+&rdquo;). There is <strong>no trusted dealer</strong>: each operator generates its own share, and the group's
+      master public key is assembled without the full private key ever being reconstructed on any machine, at any point in time.
+      When operators join or leave, the shares are <strong>reshared</strong> to the new set (and the threshold can be changed)
+      <em>without</em> changing the public key and without exposing the key. Full protocol details:
+      <a href="https://github.com/near/mpc/blob/main/crates/threshold-signatures/docs/dkg.md" target="_blank" rel="noopener">DKG documentation</a>.
+    </p>
+
+    <h2>What protects a node while it is running?</h2>
+    <p class="qa">
+      Nodes are being brought under a Trusted Execution Environment requirement — <strong>Intel TDX</strong> confidential VMs —
+      which isolate the key share from the host operating system and the operator itself. Each node publishes a
+      <strong>remote-attestation report</strong> and runs only <strong>reproducible, on-chain-approved</strong> software builds; the
+      contract records the approved image hashes and the attestation for each node, so anyone can verify that a node is running the
+      expected, unmodified code. This also enforces <strong>backward secrecy</strong>: an operator that leaves the set cannot retain
+      usable key material. TEE enforcement is being rolled out across the network, and attestation status is tracked on-chain.
+    </p>
+
+    <h2>How does the network change over time (governance)?</h2>
+    <p class="qa">
+      Adding or removing an operator, or changing the threshold, is an <strong>on-chain governance action</strong>: the existing
+      operators vote on the proposed new participant set via the contract. Only once a sufficient set of current operators has voted
+      does the network perform a key resharing to the new configuration. No single operator — and no external party — can
+      unilaterally alter the set.
+    </p>
+
+    <h2>What happens if operators go offline or misbehave?</h2>
+    <p class="qa">
+      The network tolerates operators being offline: as long as at least <em>t</em> operators are available, signing continues.
+      If fewer than <em>t</em> are available, the worst case is a <strong>failed (unproduced) signature — not a key compromise</strong>.
+      Forging a signature or reconstructing the key would require <strong>colluding across at least <em>t</em> independent operators
+      and defeating the TEE isolation on each</strong>, which is the core security assumption of the system.
+    </p>
+
+    <h2>Signing schemes supported</h2>
+    <ul>
+      <li><strong>ECDSA</strong> on <code>secp256k1</code> — Bitcoin, Ethereum &amp; EVM chains, and others.</li>
+      <li><strong>EdDSA</strong> on <code>Ed25519</code> — e.g. Solana, and other Ed25519 chains.</li>
+      <li><strong>Confidential key derivation</strong> on <code>BLS12-381</code> — for privacy-preserving key derivation.</li>
+    </ul>
+
+    <div class="callout">
+      <h2>Verify it yourself</h2>
+      <p>Don't take our word for it — the participant set and threshold are public on-chain. Query the <code>state</code> method of the
+      <code>v1.signer</code> contract:</p>
+      <pre><code>near contract call-function as-read-only v1.signer \
+  state json-args {} network-config mainnet now</code></pre>
+      <p>Or through the block explorer:
+        <a href="https://nearblocks.io/address/v1.signer/contract/methods" target="_blank" rel="noopener">nearblocks.io/address/v1.signer</a>
+        (call <code>state</code> under the Contract tab). The <a href="index.html">live operator page</a> renders the same data as a table.</p>
+    </div>
+
+    <div class="footer">
+      <div class="links">
+        <a href="index.html">Live operator set</a>
+        <a href="https://docs.near.org/chain-abstraction/chain-signatures" target="_blank" rel="noopener">Chain Signatures docs</a>
+        <a href="https://github.com/near/mpc" target="_blank" rel="noopener">Source code (near/mpc)</a>
+        <a href="https://github.com/near/mpc/blob/main/crates/threshold-signatures/docs/dkg.md" target="_blank" rel="noopener">DKG protocol</a>
+        <a href="https://github.com/near/mpc/blob/main/docs/securing-mpc-with-tee-design-doc.md" target="_blank" rel="noopener">TEE design</a>
+        <a href="https://nearblocks.io/address/v1.signer" target="_blank" rel="noopener">v1.signer on-chain</a>
+      </div>
+      <p>This overview describes the NEAR MPC signing network (Chain Signatures / Omni). It is informational, not financial advice.
+      Live figures always come from the on-chain contract. Last reviewed July 2026.</p>
+    </div>
+  </div>
+</body>
+</html>
