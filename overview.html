@@ -135,10 +135,11 @@
       any machine. <a href="https://github.com/near/mpc/blob/main/crates/threshold-signatures/docs/dkg.md" target="_blank" rel="noopener">DKG details →</a>
     </p>
 
-    <h2>What protects a node while it runs?</h2>
+    <h2>Can operators collude to leak the root private key?</h2>
     <p>
-      Nodes run inside <strong>Intel TDX</strong> secure enclaves (TEEs) with attestations verified on-chain. This is being rolled out
-      across the network — the live count above shows current coverage.
+      Not unless at least a threshold of them collude — the root key is never assembled anywhere, and a single operator's share
+      reveals nothing about it. Furthermore, nodes running in <strong>Intel TDX</strong> (TEE) prevent the operator from accessing
+      its own keyshare at all. See the live TEE count above.
     </p>
 
     <h2>How does the network change (governance)?</h2>
@@ -147,10 +148,9 @@
       No single party can change it alone.
     </p>
 
-    <h2>What if operators go offline or collude?</h2>
+    <h2>What if operators go offline?</h2>
     <p>
-      Signing continues while a threshold of operators are available; fewer means a failed signature, <strong>not a key compromise</strong>.
-      Forging a signature would require colluding across a threshold of independent operators.
+      Signing continues while a threshold of operators are available; fewer just means a failed signature, <strong>not a key compromise</strong>.
     </p>
 
     <h2>Signing schemes</h2>
