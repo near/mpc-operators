@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3C%3Fxml version='1.0' standalone='no'%3F%3E%3C!DOCTYPE svg PUBLIC '-//W3C//DTD SVG 20010904//EN' 'http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd'%3E%3Csvg version='1.0' xmlns='http://www.w3.org/2000/svg' width='32.000000pt' height='32.000000pt' viewBox='0 0 32.000000 32.000000' preserveAspectRatio='xMidYMid meet'%3E%3Cg transform='translate(0.000000,32.000000) scale(0.100000,-0.100000)' fill='%23000000' stroke='none'%3E%3Cpath d='M88 284 l-58 -35 0 -88 0 -89 61 -36 c33 -20 64 -36 69 -36 5 0 36 16 69 35 l61 36 0 89 0 89 -61 36 c-33 19 -65 35 -72 34 -7 0 -38 -16 -69 -35z m122 -120 c0 33 -2 37 -15 26 -19 -16 -19 -1 0 24 26 35 45 13 45 -54 0 -79 -18 -89 -63 -34 -73 88 -66 84 -67 35 0 -37 2 -42 15 -31 18 15 19 1 1 -22 -26 -35 -36 -20 -36 50 0 38 3 72 8 76 4 4 31 -19 59 -51 l53 -58 0 39z'/%3E%3C/g%3E%3C/svg%3E%0A" />
+  <title>NEAR MPC — Network &amp; Security Overview</title>
+  <style>
+    :root {
+      --bg: #0f1115;
+      --panel: #1a1d24;
+      --border: #2a2f3a;
+      --text: #e6e9ef;
+      --muted: #9aa3b2;
+      --accent: #5b8cff;
+      --accent-2: #1f2733;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+    }
+    .wrap { max-width: 820px; margin: 0 auto; padding: 32px 20px 64px; }
+    a { color: var(--accent); }
+    h1 { font-size: 1.6rem; margin: 0 0 4px; }
+    h2 { font-size: 1.1rem; margin: 30px 0 6px; }
+    .sub { color: var(--muted); margin: 0 0 8px; font-size: 0.95rem; }
+    p { margin: 8px 0; }
+    .lead { font-size: 1.02rem; }
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      background: var(--accent-2);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      padding: 1px 5px;
+      font-size: 0.85em;
+    }
+    /* Live stat row */
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin: 22px 0 6px;
+    }
+    .stat {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 18px 16px;
+      text-align: center;
+    }
+    .stat .num {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 2.8rem;
+      font-weight: 700;
+      line-height: 1;
+      color: var(--accent);
+    }
+    .stat.target .num { color: var(--text); font-size: 2.2rem; }
+    .stat .lbl { color: var(--muted); font-size: 0.8rem; margin-top: 8px; }
+    .stats-note { color: var(--muted); font-size: 0.82rem; margin: 2px 2px 0; text-align: right; }
+    .stats-note a { color: var(--accent); }
+    @media (max-width: 560px) { .stats { grid-template-columns: 1fr; } }
+    ul { margin: 8px 0; padding-left: 22px; }
+    li { margin: 4px 0; }
+    .callout {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--accent);
+      border-radius: 10px;
+      padding: 16px 18px;
+      margin: 24px 0;
+    }
+    .callout h2 { margin-top: 0; }
+    pre {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 14px;
+      overflow-x: auto;
+      margin: 12px 0;
+    }
+    pre code { background: none; border: none; padding: 0; font-size: 0.82rem; color: var(--text); }
+    .footer {
+      margin-top: 40px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+    .footer a { text-decoration: none; }
+    .footer .links { display: flex; flex-wrap: wrap; gap: 8px 20px; margin-bottom: 14px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>NEAR MPC — Network &amp; Security Overview</h1>
+    <p class="sub">How the NEAR Multi-Party Computation (MPC) signing network is structured, secured, and independently verifiable.</p>
+
+    <p class="lead">
+      NEAR's MPC network (<a href="https://docs.near.org/chain-abstraction/chain-signatures" target="_blank" rel="noopener">Chain Signatures</a>)
+      lets a NEAR account sign transactions on other chains with <strong>no single party ever holding the private key</strong>.
+      The key is split across independent operators, and a signature is valid only when a threshold of them cooperate.
+    </p>
+
+    <div class="stats">
+      <div class="stat">
+        <div class="num" id="stat-threshold">—</div>
+        <div class="lbl">operators must cooperate<br />to produce a signature</div>
+      </div>
+      <div class="stat">
+        <div class="num" id="stat-total">—</div>
+        <div class="lbl">independent operators<br />in the network</div>
+      </div>
+      <div class="stat">
+        <div class="num" id="stat-tee">—</div>
+        <div class="lbl">operators running in a<br />verified TEE (Intel TDX)</div>
+      </div>
+    </div>
+    <p class="stats-note" id="stats-note">Live from the <code>v1.signer</code> contract on NEAR mainnet.</p>
+
+    <h2>Who operates the nodes?</h2>
+    <p>
+      Several independent entities. See the <a href="index.html">live operator page</a> for the full list.
+    </p>
+
+    <h2>How are the key shares generated?</h2>
+    <p>
+      By a <strong>fully distributed</strong> key generation protocol — no trusted dealer, and the full private key never exists on
+      any machine. <a href="https://github.com/near/mpc/blob/main/crates/threshold-signatures/docs/dkg.md" target="_blank" rel="noopener">DKG details →</a>
+    </p>
+
+    <h2>Can operators collude to leak the root private key?</h2>
+    <p>
+      Not unless at least a threshold of them collude — the root key is never assembled anywhere, and a single operator's share
+      reveals nothing about it. Furthermore, nodes running in <strong>Intel TDX</strong> (TEE) prevent the operator from accessing
+      its own keyshare at all. See the live TEE count above.
+    </p>
+
+    <h2>How does the network change (governance)?</h2>
+    <p>
+      Adding or removing an operator, or changing the threshold, requires an <strong>on-chain vote</strong> by the existing operators.
+      No single party can change it alone.
+    </p>
+
+    <h2>What if operators go offline?</h2>
+    <p>
+      Signing continues while a threshold of operators are available; fewer just means a failed signature, <strong>not a key compromise</strong>.
+    </p>
+
+    <h2>Signing schemes</h2>
+    <ul>
+      <li><strong>ECDSA</strong> / <code>secp256k1</code> — Bitcoin, Ethereum &amp; EVM chains.</li>
+      <li><strong>EdDSA</strong> / <code>Ed25519</code> — Solana and other Ed25519 chains.</li>
+      <li><strong>Confidential key derivation</strong> / <code>BLS12-381</code>.</li>
+    </ul>
+
+    <h2>Has the code been audited?</h2>
+    <p>
+      Yes. We strive to have every feature and critical code path independently audited.
+      Public reports by <a href="https://github.com/trailofbits/publications" target="_blank" rel="noopener">Trail of Bits</a>:
+    </p>
+    <ul>
+      <li><a href="https://github.com/trailofbits/publications/blob/master/reviews/2025-03-near-one-mpc-chain-signatures-securityreview.pdf" target="_blank" rel="noopener">MPC / Chain Signatures</a> — the contract and signing network.</li>
+      <li><a href="https://github.com/trailofbits/publications/blob/master/reviews/2025-05-near-one-pedpop+-securityreview.pdf" target="_blank" rel="noopener">PedPoP+</a> — the distributed key generation protocol.</li>
+      <li><a href="https://github.com/trailofbits/publications/blob/master/reviews/2025-12-near-one-confidential-key-derivation-securityreview.pdf" target="_blank" rel="noopener">Confidential Key Derivation</a> — the BLS12-381 CKD scheme.</li>
+      <li><a href="https://github.com/trailofbits/publications/blob/master/reviews/2026-02-near-one-robust-ecdsa-securityreview.pdf" target="_blank" rel="noopener">Robust ECDSA</a> — the ECDSA signing scheme.</li>
+    </ul>
+
+    <div class="callout">
+      <h2>Verify it yourself</h2>
+      <p>The participant set and threshold are public on-chain. Query the <code>state</code> method of <code>v1.signer</code>:</p>
+      <pre><code>near contract call-function as-read-only v1.signer \
+  state json-args {} network-config mainnet now</code></pre>
+      <p>Or in the explorer: <a href="https://nearblocks.io/address/v1.signer/contract/methods" target="_blank" rel="noopener">nearblocks.io/address/v1.signer</a>
+        (call <code>state</code> under Contract).</p>
+    </div>
+
+    <div class="footer">
+      <div class="links">
+        <a href="https://docs.near.org/chain-abstraction/chain-signatures" target="_blank" rel="noopener">Chain Signatures docs</a>
+        <a href="https://github.com/near/mpc" target="_blank" rel="noopener">Source code (near/mpc)</a>
+        <a href="https://github.com/near/mpc/blob/main/crates/threshold-signatures/docs/dkg.md" target="_blank" rel="noopener">DKG protocol</a>
+        <a href="https://github.com/near/mpc/blob/main/docs/securing-mpc-with-tee-design-doc.md" target="_blank" rel="noopener">TEE design</a>
+        <a href="https://github.com/trailofbits/publications" target="_blank" rel="noopener">Security audits (Trail of Bits)</a>
+        <a href="https://nearblocks.io/address/v1.signer" target="_blank" rel="noopener">v1.signer on-chain</a>
+      </div>
+      <p>Last updated 2026-07-22. Operator counts and TEE status are live from the contract.</p>
+    </div>
+  </div>
+
+  <script>
+    // Fetch the live threshold and operator count from the mainnet v1.signer
+    // contract, reusing the same `state` call as the operator dashboard.
+    const CONTRACT = "v1.signer";
+    const RPCS = [
+      "https://free.rpc.fastnear.com",
+      "https://rpc.mainnet.near.org",
+      "https://near.lava.build",
+    ];
+
+    async function callView(rpcUrl, method, args) {
+      const resp = await fetch(rpcUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          jsonrpc: "2.0",
+          id: "mpc-overview",
+          method: "query",
+          params: {
+            request_type: "call_function",
+            finality: "final",
+            account_id: CONTRACT,
+            method_name: method,
+            args_base64: btoa(JSON.stringify(args || {})),
+          },
+        }),
+      });
+      if (!resp.ok) throw new Error("HTTP " + resp.status);
+      const json = await resp.json();
+      if (json.error) throw new Error(json.error.message || "RPC error");
+      const result = json.result;
+      if (!result || !Array.isArray(result.result)) throw new Error("bad shape");
+      return JSON.parse(new TextDecoder().decode(new Uint8Array(result.result)));
+    }
+
+    async function loadStats() {
+      for (const rpc of RPCS) {
+        try {
+          const state = await callView(rpc, "state");
+          const params = state && state.Running && state.Running.parameters;
+          const parts = params && params.participants && params.participants.participants;
+          if (!Array.isArray(parts) || typeof params.threshold !== "number") continue;
+
+          document.getElementById("stat-threshold").textContent = params.threshold;
+          document.getElementById("stat-total").textContent = parts.length;
+
+          // A participant runs in a real TEE only when its on-chain attestation is a
+          // genuine Intel TDX quote (the `Dstack` variant). Non-TEE nodes submit a
+          // `Mock` attestation, so counting `get_tee_accounts` would overstate this.
+          const variants = await Promise.all(
+            parts.map((t) =>
+              callView(rpc, "get_attestation", { tls_public_key: t[2] && t[2].tls_public_key })
+                .then((att) => (att == null ? "none" : Object.keys(att)[0]))
+                .catch(() => "unknown")
+            )
+          );
+          const inTee = variants.filter((v) => v === "Dstack").length;
+          document.getElementById("stat-tee").textContent = inTee + " / " + parts.length;
+          return;
+        } catch (e) {
+          // try the next endpoint
+        }
+      }
+      // All endpoints failed — keep placeholders and point at the live page.
+      document.getElementById("stats-note").innerHTML =
+        'Could not load live figures — see the <a href="index.html">live operator page</a>.';
+    }
+
+    loadStats();
+  </script>
+</body>
+</html>
