@@ -1,0 +1,16 @@
+{
+  "name": "near-mpc-signing-map",
+  "private": true,
+  "type": "module",
+  "description": "Live map of NEAR MPC nodes signing chain signatures",
+  "license": "MIT",
+  "scripts": {
+    "serve": "python3 -m http.server 8000",
+    "locate": "node scripts/locate-nodes.mjs",
+    "test": "node --test \"test/unit/*.test.js\"",
+    "test:live": "node --test \"test/live/*.test.js\""
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

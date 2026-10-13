@@ -1,0 +1,10 @@
+{
+ "Mock": {
+  "WithConstraints": {
+   "mpc_docker_image_hash": null,
+   "launcher_docker_compose_hash": null,
+   "expiry_timestamp_seconds": 1791401557,
+   "expected_measurements": null
+  }
+ }
+}

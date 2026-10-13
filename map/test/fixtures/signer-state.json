@@ -1,0 +1,259 @@
+{
+ "Running": {
+  "domains": {
+   "domains": [
+    {
+     "id": 0,
+     "protocol": "CaitSith",
+     "reconstruction_threshold": 11,
+     "purpose": "Sign"
+    },
+    {
+     "id": 1,
+     "protocol": "Frost",
+     "reconstruction_threshold": 11,
+     "purpose": "Sign"
+    },
+    {
+     "id": 2,
+     "protocol": "ConfidentialKeyDerivation",
+     "reconstruction_threshold": 11,
+     "purpose": "CKD"
+    },
+    {
+     "id": 3,
+     "protocol": "CaitSith",
+     "reconstruction_threshold": 11,
+     "purpose": "ForeignTx"
+    }
+   ],
+   "next_domain_id": 4
+  },
+  "keyset": {
+   "epoch_id": 13,
+   "domains": [
+    {
+     "domain_id": 0,
+     "key": {
+      "Secp256k1": {
+       "near_public_key": "secp256k1:3tFRbMqmoa6AAALMrEFAYCEoHcqKxeW38YptwowBVBtXK1vo36HDbUWuR6EZmoK4JcH6HDkNMGGqP1ouV7VZUWya"
+      }
+     },
+     "attempt": 0
+    },
+    {
+     "domain_id": 1,
+     "key": {
+      "Ed25519": {
+       "near_public_key_compressed": "ed25519:G9hwngxWNKdmqMCmU1Yt6LPhFpayJeKFxyAV1HqMNLtF",
+       "edwards_point": [
+        225,
+        26,
+        63,
+        32,
+        184,
+        108,
+        201,
+        78,
+        91,
+        117,
+        55,
+        216,
+        102,
+        209,
+        196,
+        106,
+        227,
+        228,
+        26,
+        70,
+        161,
+        208,
+        143,
+        122,
+        234,
+        22,
+        150,
+        164,
+        165,
+        0,
+        191,
+        208
+       ]
+      }
+     },
+     "attempt": 3
+    },
+    {
+     "domain_id": 2,
+     "key": {
+      "Bls12381": {
+       "public_key": "bls12381g2:24mhN4RnB2CbiUkAfukyh4s1CT6dUNd9Pc8kRnL4LvAP3tcxhUupbphmfbmwHSi66aFCiZkMgiH2KqXWJLD7JUeAFhoLS3WQbzWcpUzhERLqxyocwT9Xrd4WNvEuKavxmXdR"
+      }
+     },
+     "attempt": 0
+    },
+    {
+     "domain_id": 3,
+     "key": {
+      "Secp256k1": {
+       "near_public_key": "secp256k1:29UZSakxpCKVJaJYUmR5UtqdP16xcSemPudWXGEZCxs5HemWkXb331X3o8fqLCZtSj9sdes33YQJNa9D1wEBd9ac"
+      }
+     },
+     "attempt": 1
+    }
+   ]
+  },
+  "parameters": {
+   "participants": {
+    "next_id": 21,
+    "participants": [
+     [
+      "blacksandtech.near",
+      0,
+      {
+       "url": "https://multichain-mainnet-0.near.blksnd.xyz",
+       "tls_public_key": "ed25519:2XPuwqhg71RXRiTUMKGapd8FYWgXnxVvydYBK9tS1ex2"
+      }
+     ],
+     [
+      "mpc-lgns.near",
+      4,
+      {
+       "url": "https://near.mpc.lgns.net",
+       "tls_public_key": "ed25519:EFW6528i4iU1XK3Q53r6kyHEjjA7puJLhHLH3mG1YRZd"
+      }
+     ],
+     [
+      "multichain-mainnet-aurora.near",
+      5,
+      {
+       "url": "https://multichain-mainnet.aurora.dev",
+       "tls_public_key": "ed25519:9QAvLjfjDX7GYwJaT7Wzz9bjS4NzniaXukx8vYKaZZLG"
+      }
+     ],
+     [
+      "near-mpc-staking4all-01.near",
+      6,
+      {
+       "url": "https://multichain-mainnet-0.staking4all.org",
+       "tls_public_key": "ed25519:2CbEnbBQ9RA2oocc9a89Eck5d9ighfL7FGiEkMyQ7YB9"
+      }
+     ],
+     [
+      "nodemonster.near",
+      7,
+      {
+       "url": "https://near.node.monster",
+       "tls_public_key": "ed25519:9mix9iNfMMtSAhzgHCisnjMJtiofn8cFkprgUTkRtPN"
+      }
+     ],
+     [
+      "n1-multichain.near",
+      8,
+      {
+       "url": "https://57.129.86.53:80",
+       "tls_public_key": "ed25519:DA6z3Gza1fmo3wTxiV4B1Lnv6nMkS38fJuKPbBvKWSct"
+      }
+     ],
+     [
+      "everstake-mpc-1.near",
+      10,
+      {
+       "url": "http://nearmpc-mainnet-tdx.everstake.com:80",
+       "tls_public_key": "ed25519:2DkhuDvZrBWEYKjhKx9nekXNHkyeZxS2S3U5rHtHv2ca"
+      }
+     ],
+     [
+      "stakin-mpc.near",
+      11,
+      {
+       "url": "http://near-mpc-mainnet-1.stakin-nodes.com",
+       "tls_public_key": "ed25519:9WiRNJ8Ci1RxfjdyGVdZHxUt5JJBgbfK87bZzgMd7ec4"
+      }
+     ],
+     [
+      "mpch-01.near",
+      12,
+      {
+       "url": "http://mpch-mpc-near-m-01.near.mainnet.mpch.io",
+       "tls_public_key": "ed25519:9FNunZGVJygvREcWxUzHZABCGi5A3gC43sizeKAcDpE4"
+      }
+     ],
+     [
+      "svrn-01.near",
+      13,
+      {
+       "url": "http://svrn-mpc-near-m-01.near.mainnet.ssgllc.io",
+       "tls_public_key": "ed25519:9fLzNc3CSfMNiutiGvLDsVNJgWxaDEzj6iU4qwD9sgcQ"
+      }
+     ],
+     [
+      "greenfield-mpc01.near",
+      14,
+      {
+       "url": "http://near-mpc-mainnet2.greenfield.xyz:80",
+       "tls_public_key": "ed25519:3RWgtpdVjuoRZsf3S73ipwVMRiYML37bLHKbokkWeGPq"
+      }
+     ],
+     [
+      "natsai-mpc.near",
+      15,
+      {
+       "url": "http://near-mpc-mainnet-1.natsai.xyz:80",
+       "tls_public_key": "ed25519:8Kwvcxvx3fjtAizVjMVMLBeQJHWCBJY7a9bjAMb4aiHd"
+      }
+     ],
+     [
+      "hashkeympc.near",
+      16,
+      {
+       "url": "http://near-mpc-mainnet-1.hashkey.cloud",
+       "tls_public_key": "ed25519:EUB6coGTMVia2rdjDB9Q18yVn4iu38fgVbHberzKC847"
+      }
+     ],
+     [
+      "astrostakers-mainnet.near",
+      17,
+      {
+       "url": "http://near-mainnet-mpc.astrostakers.com",
+       "tls_public_key": "ed25519:Fmv82fr5ALKs597ohcZMi7QXMrfQ3rDELVG231qDF4ME"
+      }
+     ],
+     [
+      "klever-nearmpc-01.near",
+      18,
+      {
+       "url": "http://multichain-mainnet-01.klever.io",
+       "tls_public_key": "ed25519:KfQywkbYRBwBR2sypA9uHqFNWqywNZUCNdw1zFmjnMh"
+      }
+     ],
+     [
+      "nansen-ai-mpc.near",
+      19,
+      {
+       "url": "http://mpc.near.staking.nansen.ai",
+       "tls_public_key": "ed25519:E59NQmrXbWNrKcrg5Fhxwa73FFyjRWquLsNTzakHD5aU"
+      }
+     ],
+     [
+      "bitwise-mpc01.near",
+      20,
+      {
+       "url": "http://near-mpc-mainnet01.mainnet.validators.bitwiseinvestments.com",
+       "tls_public_key": "ed25519:3R2RE7XSQepvkbbvkvpJ3iWGXgY6Ztpj1T3eguovMXZT"
+      }
+     ]
+    ]
+   },
+   "threshold": 11
+  },
+  "parameters_votes": {
+   "proposal_by_account": {}
+  },
+  "add_domains_votes": {
+   "proposal_by_account": {}
+  },
+  "previously_cancelled_resharing_epoch_id": null
+ }
+}

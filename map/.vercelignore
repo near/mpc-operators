@@ -1,0 +1,5 @@
+# Only the static site ships: index.html, styles.css, src/, data/.
+test/
+scripts/
+README.md
+LICENSE
