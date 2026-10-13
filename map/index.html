@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>NEAR MPC Signing Map</title>
+  <meta name="description" content="Live map of NEAR Protocol MPC nodes signing chain signatures on v1.signer.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpolygon points='16,3 27.3,9.5 27.3,22.5 16,29 4.7,22.5 4.7,9.5' fill='none' stroke='%2300ec97' stroke-width='3'/%3E%3Ccircle cx='16' cy='16' r='4' fill='%2300ec97'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+  <link rel="stylesheet" href="../site.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <nav class="site-nav" aria-label="Site">
+    <a class="site-brand" href="../">NEAR MPC</a>
+    <ul>
+      <li><a href="../">Operators</a></li>
+      <li><a href="../overview.html">Security</a></li>
+      <li><a href="./" aria-current="page">Live map <span class="site-tag">mainnet</span></a></li>
+    </ul>
+    <button id="api-keys" class="button" type="button">API keys</button>
+  </nav>
+  <header class="bar">
+    <div class="brand">
+      <h1>NEAR MPC Signing Map <span class="site-tag">Mainnet only</span></h1>
+      <p>Chain signatures on <code>v1.signer</code>, live from mainnet</p>
+    </div>
+    <dl id="stats" class="stats"></dl>
+    <div class="bar-end">
+      <ul id="sources" class="sources" aria-label="Data sources"></ul>
+    </div>
+  </header>
+  <p id="notice" class="notice" role="status" hidden></p>
+
+  <main class="console">
+    <section class="panel panel-requests" aria-labelledby="requests-title">
+      <header class="panel-head">
+        <h2 id="requests-title">Requests</h2>
+        <span id="request-count" class="count">0</span>
+      </header>
+      <p class="panel-sub">Contracts and accounts asking the network to sign</p>
+      <ol id="request-log" class="log"></ol>
+    </section>
+
+    <section class="stage" aria-label="Network map">
+      <div id="map" class="map" role="img" aria-label="World map of MPC nodes with animated signing rounds"></div>
+      <ul class="legend">
+        <li><span class="swatch swatch-request"></span>Request lands on-chain; every node sees it</li>
+        <li><span class="swatch swatch-share"></span>Peers send signature shares to the leader <em>(peer set illustrative)</em></li>
+        <li><span class="swatch swatch-response"></span>Leader submits <code>respond()</code></li>
+        <li><span class="swatch-node"></span>Ring: node runs in Intel TDX</li>
+      </ul>
+      <section class="roster-wrap" aria-labelledby="roster-title">
+        <header class="panel-head">
+          <h2 id="roster-title">Nodes</h2>
+          <span class="panel-sub">Sorted by signatures delivered</span>
+        </header>
+        <ul id="roster" class="roster"></ul>
+      </section>
+    </section>
+
+    <section class="panel panel-delivered" aria-labelledby="delivered-title">
+      <header class="panel-head">
+        <h2 id="delivered-title">Delivered</h2>
+        <span id="delivered-count" class="count">0</span>
+      </header>
+      <p class="panel-sub">The node that assembled each signature and posted it</p>
+      <ol id="delivered-log" class="log"></ol>
+    </section>
+  </main>
+
+
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>

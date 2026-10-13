@@ -1,0 +1,66 @@
+# Re-geolocates the MPC nodes for the live map and opens (or updates) a PR
+# changing map/data/node-locations.json when a node was added, removed or
+# moved. Needs "Allow GitHub Actions to create and approve pull requests"
+# under Settings → Actions → General.
+name: Update node locations
+
+on:
+  schedule:
+    - cron: "37 5 * * *" # daily
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: update-node-locations
+  cancel-in-progress: false
+
+jobs:
+  locate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Locate nodes
+        id: locate
+        # A node with no previous location that fails lookup exits non-zero.
+        # Propose whatever did resolve, then fail the run so it gets noticed.
+        run: node map/scripts/locate-nodes.mjs || echo "failed=true" >> "$GITHUB_OUTPUT"
+        env:
+          FASTNEAR_API_KEY: ${{ secrets.FASTNEAR_API_KEY }}
+
+      - name: Drop the file if no node changed
+        # generatedAt changes on every run; only the nodes themselves matter.
+        run: |
+          file=map/data/node-locations.json
+          if git show "HEAD:$file" | jq -S .nodes > /tmp/old.json && jq -S .nodes "$file" > /tmp/new.json \
+            && cmp -s /tmp/old.json /tmp/new.json; then
+            echo "No node changes."
+            git checkout -- "$file"
+          fi
+
+      - name: Open or update the PR
+        # No-op when the working tree is clean. Reuses one branch, so an open
+        # PR is updated rather than duplicated.
+        uses: peter-evans/create-pull-request@v7
+        with:
+          branch: chore/update-node-locations
+          delete-branch: true
+          add-paths: map/data/node-locations.json
+          commit-message: "chore: Update MPC node locations"
+          title: "chore: Update MPC node locations"
+          body: |
+            The daily [node-locations run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) found nodes that were added, removed or moved.
+          reviewers: graphite
+
+      - name: Report lookup failures
+        if: steps.locate.outputs.failed == 'true'
+        run: |
+          echo "::error::Some nodes could not be located; see the 'Locate nodes' step."
+          exit 1
