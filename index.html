@@ -5,112 +5,115 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3C%3Fxml version='1.0' standalone='no'%3F%3E%3C!DOCTYPE svg PUBLIC '-//W3C//DTD SVG 20010904//EN' 'http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd'%3E%3Csvg version='1.0' xmlns='http://www.w3.org/2000/svg' width='32.000000pt' height='32.000000pt' viewBox='0 0 32.000000 32.000000' preserveAspectRatio='xMidYMid meet'%3E%3Cg transform='translate(0.000000,32.000000) scale(0.100000,-0.100000)' fill='%23000000' stroke='none'%3E%3Cpath d='M88 284 l-58 -35 0 -88 0 -89 61 -36 c33 -20 64 -36 69 -36 5 0 36 16 69 35 l61 36 0 89 0 89 -61 36 c-33 19 -65 35 -72 34 -7 0 -38 -16 -69 -35z m122 -120 c0 33 -2 37 -15 26 -19 -16 -19 -1 0 24 26 35 45 13 45 -54 0 -79 -18 -89 -63 -34 -73 88 -66 84 -67 35 0 -37 2 -42 15 -31 18 15 19 1 1 -22 -26 -35 -36 -20 -36 50 0 38 3 72 8 76 4 4 31 -19 59 -51 l53 -58 0 39z'/%3E%3C/g%3E%3C/svg%3E%0A" />
   <title>NEAR MPC Participants</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+  <link rel="stylesheet" href="site.css">
   <style>
-    :root {
-      --bg: #0f1115;
-      --panel: #1a1d24;
-      --border: #2a2f3a;
-      --text: #e6e9ef;
-      --muted: #9aa3b2;
-      --accent: #5b8cff;
-      --accent-2: #1f2733;
-      --error: #ff6b6b;
-      --ok: #4ade80;
-    }
     * { box-sizing: border-box; }
     body {
       margin: 0;
-      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-      background: var(--bg);
-      color: var(--text);
+      font-family: var(--font-body);
+      background: var(--ground);
+      color: var(--ink);
       line-height: 1.5;
     }
     .wrap { max-width: 960px; margin: 0 auto; padding: 32px 20px 64px; }
     h1 { font-size: 1.5rem; margin: 0 0 4px; }
-    .sub { color: var(--muted); margin: 0 0 24px; font-size: 0.9rem; }
+    .sub { color: var(--ink-soft); margin: 0 0 24px; font-size: 0.9rem; }
     .controls {
       display: flex;
       flex-wrap: wrap;
       gap: 12px;
       align-items: center;
-      background: var(--panel);
-      border: 1px solid var(--border);
+      background: var(--surface);
+      border: 1px solid var(--line);
       border-radius: 10px;
       padding: 14px 16px;
       margin-bottom: 16px;
     }
-    .toggle { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+    .toggle { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
     .toggle button {
       background: transparent;
-      color: var(--muted);
+      color: var(--ink-soft);
       border: none;
       padding: 8px 16px;
       font-size: 0.9rem;
       cursor: pointer;
     }
-    .toggle button.active { background: var(--accent); color: #fff; }
+    .toggle button.active { background: var(--accent); color: var(--on-accent); }
     .rpc-field { display: flex; flex: 1 1 320px; gap: 8px; align-items: center; min-width: 280px; }
-    .rpc-field label { color: var(--muted); font-size: 0.85rem; white-space: nowrap; }
+    .rpc-field label { color: var(--ink-soft); font-size: 0.85rem; white-space: nowrap; }
     input[type="text"] {
       flex: 1;
-      background: var(--bg);
-      border: 1px solid var(--border);
-      color: var(--text);
+      background: var(--ground);
+      border: 1px solid var(--line);
+      color: var(--ink);
       border-radius: 8px;
       padding: 8px 10px;
       font-size: 0.85rem;
-      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-family: var(--font-data);
     }
     input[type="text"][hidden] { display: none; }
     select {
-      background: var(--bg);
-      border: 1px solid var(--border);
-      color: var(--text);
+      background: var(--ground);
+      border: 1px solid var(--line);
+      color: var(--ink);
       border-radius: 8px;
       padding: 8px 10px;
       font-size: 0.85rem;
       cursor: pointer;
     }
     .btn {
-      background: var(--accent-2);
-      color: var(--text);
-      border: 1px solid var(--border);
+      background: var(--surface-raised);
+      color: var(--ink);
+      border: 1px solid var(--line);
       border-radius: 8px;
       padding: 8px 16px;
       font-size: 0.9rem;
       cursor: pointer;
     }
-    .btn:hover { border-color: var(--accent); }
+    .btn:hover { border-color: var(--accent-ink); }
     .quorum { display: flex; align-items: center; gap: 16px; margin: 4px 2px 16px; }
     .quorum[hidden] { display: none; }
     .quorum-value {
       font-size: 2.6rem;
       font-weight: 700;
       line-height: 1;
-      color: var(--accent);
-      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      white-space: nowrap;
+      color: var(--accent-ink);
+      font-family: var(--font-data);
     }
-    .quorum-label { color: var(--muted); font-size: 0.85rem; }
-    .status { font-size: 0.85rem; color: var(--muted); margin: 8px 2px 16px; min-height: 1.2em; }
-    .status.error { color: var(--error); }
-    table { width: 100%; border-collapse: collapse; background: var(--panel); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
-    th, td { text-align: left; padding: 12px 14px; border-bottom: 1px solid var(--border); font-size: 0.9rem; vertical-align: top; }
-    th { color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; font-size: 0.72rem; }
+    .quorum-label { color: var(--ink-soft); font-size: 0.85rem; }
+    .status { font-size: 0.85rem; color: var(--ink-soft); margin: 8px 2px 16px; min-height: 1.2em; }
+    .status.error { color: var(--danger); }
+    table { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+    th, td { text-align: left; padding: 12px 14px; border-bottom: 1px solid var(--line); font-size: 0.9rem; vertical-align: top; }
+    th { color: var(--ink-soft); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; font-size: 0.72rem; }
     tr:last-child td { border-bottom: none; }
-    td.account, td.url { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.82rem; }
-    td.url a { color: var(--accent); text-decoration: none; word-break: break-all; }
+    td.account, td.url { font-family: var(--font-data); font-size: 0.82rem; }
+    td.url a { color: var(--accent-ink); text-decoration: none; word-break: break-all; }
     td.url a:hover { text-decoration: underline; }
-    .empty td { color: var(--muted); text-align: center; padding: 24px; }
+    .empty td { color: var(--ink-soft); text-align: center; padding: 24px; }
     .tee { white-space: nowrap; font-size: 0.8rem; font-weight: 600; }
-    .tee.yes { color: var(--ok); }
-    .tee.no { color: var(--muted); }
-    .tee.unknown { color: var(--muted); }
+    .tee.yes { color: var(--accent-ink); }
+    .tee.no { color: var(--ink-soft); }
+    .tee.unknown { color: var(--ink-soft); }
   </style>
 </head>
 <body>
+  <nav class="site-nav" aria-label="Site">
+    <a class="site-brand" href="./">NEAR MPC</a>
+    <ul>
+      <li><a href="./" aria-current="page">Operators</a></li>
+      <li><a href="overview.html">Security</a></li>
+      <li><a href="map/">Live map <span class="site-tag">mainnet</span></a></li>
+    </ul>
+    <button id="api-keys" class="button" type="button">API keys</button>
+  </nav>
   <div class="wrap">
     <h1>NEAR MPC Operators</h1>
-    <p class="sub">Live operator set from the MPC signer contract. · <a href="overview.html" style="color: var(--accent);">Network &amp; security overview</a></p>
+    <p class="sub">Live operator set from the MPC signer contract.</p>
 
     <div class="controls">
       <div class="toggle" id="networkToggle">
@@ -145,7 +148,9 @@
     </table>
   </div>
 
-  <script>
+  <script type="module">
+    import { keyHeaders, onKeysChange } from "./site.js";
+
     // --- Config -----------------------------------------------------------
     const NETWORKS = {
       mainnet: { contract: "v1.signer" },
@@ -156,13 +161,13 @@
     // First entry is the default. A "Custom…" option is appended automatically.
     const PRESETS = {
       mainnet: [
-        { label: "FastNear (recommended)", url: "https://free.rpc.fastnear.com" },
+        { label: "FastNear (recommended)", url: "https://rpc.mainnet.fastnear.com" },
         { label: "NEAR.org",               url: "https://rpc.mainnet.near.org" },
         { label: "Lava Network",           url: "https://near.lava.build" },
         { label: "dRPC",                   url: "https://near.drpc.org" },
       ],
       testnet: [
-        { label: "FastNear (recommended)", url: "https://test.rpc.fastnear.com" },
+        { label: "FastNear (recommended)", url: "https://rpc.testnet.fastnear.com" },
         { label: "NEAR.org",               url: "https://rpc.testnet.near.org" },
         { label: "dRPC",                   url: "https://near-testnet.drpc.org" },
       ],
@@ -269,7 +274,7 @@
       };
       const resp = await fetch(rpcUrl, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...keyHeaders(rpcUrl) },
         body: JSON.stringify(body),
       });
       if (!resp.ok) throw new Error("HTTP " + resp.status + " " + resp.statusText);
@@ -479,6 +484,7 @@
     els.preset.addEventListener("change", () => { syncCustomInput(); load(); });
     els.refresh.addEventListener("click", load);
     els.rpc.addEventListener("keydown", (e) => { if (e.key === "Enter") load(); });
+    onKeysChange(load);
 
     // Init
     populatePresets(currentNetwork);

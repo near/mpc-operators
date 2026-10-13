@@ -4,8 +4,8 @@ import { Feed } from "./feed.js";
 import { pickPeers } from "./lib/cohort.js";
 import { parseNodeLocations } from "./lib/locations.js";
 import { NetworkMap } from "./map.js";
-import { loadKeys, saveKeys } from "./settings.js";
 import { Panels, roundCaption } from "./ui.js";
+import { loadKeys, onKeysChange } from "../../site.js";
 
 /**
  * @typedef {import("./lib/ledger.js").SignRequest} SignRequest
@@ -182,30 +182,8 @@ function hoverNode(account) {
 panels.onHoverNode = hoverNode;
 map.onHover(hoverNode);
 
-// ── Settings dialog ───────────────────────────────────────────────────────
-
-const dialog = byId("settings");
-const form = byId("settings-form");
-const fastnearInput = byId("key-fastnear");
-const nearblocksInput = byId("key-nearblocks");
-
-byId("open-settings").addEventListener("click", () => {
-  const keys = loadKeys();
-  if (fastnearInput instanceof HTMLInputElement) fastnearInput.value = keys.fastnear;
-  if (nearblocksInput instanceof HTMLInputElement) nearblocksInput.value = keys.nearblocks;
-  if (dialog instanceof HTMLDialogElement) dialog.showModal();
-});
-
-form.addEventListener("submit", (event) => {
-  event.preventDefault();
-  if (!(fastnearInput instanceof HTMLInputElement) || !(nearblocksInput instanceof HTMLInputElement)) return;
-  feed.setKeys(saveKeys({ fastnear: fastnearInput.value, nearblocks: nearblocksInput.value }));
-  if (dialog instanceof HTMLDialogElement) dialog.close();
-});
-
-byId("close-settings").addEventListener("click", () => {
-  if (dialog instanceof HTMLDialogElement) dialog.close();
-});
+// Keys are entered in the site-wide dialog (site.js).
+onKeysChange((keys) => feed.setKeys(keys));
 
 panels.renderSources(feed.status);
 panels.renderStats(null, feed.attestations, []);

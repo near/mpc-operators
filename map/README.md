@@ -1,17 +1,22 @@
 # NEAR MPC Signing Map
 
 A live map of the NEAR Protocol MPC network signing chain signatures on
-`v1.signer`. Incoming requests on the left, the operators on a world map in
-the middle, delivered signatures on the right.
+`v1.signer` (mainnet only). Incoming requests on the left, the operators on a
+world map in the middle, delivered signatures on the right.
+
+It is the "Live map" page of the MPC info site and shares the site's nav,
+palette and API-keys dialog (`../site.css`, `../site.js`), so serve the
+repository root, not this directory:
 
 ```sh
-python3 -m http.server 8000   # or: npm run serve
-open http://localhost:8000
+python3 -m http.server 8000   # from the repository root
+open http://localhost:8000/map/
 ```
 
 No build step and no dependencies. It's plain ES modules; `d3-geo`,
 `topojson-client` and the world atlas load from jsDelivr. The page needs to be
-served over HTTP (not `file://`) because of the modules.
+served over HTTP (not `file://`) because of the modules. Node is only needed
+for the tests and the location script below.
 
 ## Where the data comes from
 
@@ -42,8 +47,9 @@ so.
 
 ## API keys
 
-Click **API keys**. Keys stay in the browser's localStorage, and each is sent
-only to its own service as `Authorization: Bearer`. Without keys, everything
+Click **API keys** in the site nav. The keys are shared by every page of the
+site, stay in the browser's localStorage, and each is sent only to its own
+service as `Authorization: Bearer`. Without keys, everything
 except destination decoding works fine. NearBlocks' free tier is 6 calls/min
 and 333/day per IP, so the page backs off to one call every 90 s, then every
 5 min once it hits a 429.
@@ -51,13 +57,17 @@ and 333/day per IP, so the page backs off to one call every 90 s, then every
 ## Node locations
 
 Operators rarely move, and ipwho.is's free tier rejects browser-origin
-requests, so locations ship as data. When operators join or leave:
+requests, so locations ship as data. A daily GitHub Action
+(`.github/workflows/update-node-locations.yml` at the repository root)
+refreshes the file and opens a PR when a node was added, removed or moved. To
+run it by hand:
 
 ```sh
 node scripts/locate-nodes.mjs   # or: npm run locate
 ```
 
 It resolves each participant's host over DNS-over-HTTPS and geolocates the IP.
+A node whose lookup fails keeps its previous location.
 A new operator that isn't in the file still appears in the roster, just not
 on the map. `test/live` fails when the file drifts from the chain.
 
@@ -74,6 +84,7 @@ node --test "test/live/*.test.js"   # hits mainnet; FASTNEAR_API_KEY / NEARBLOCK
 index.html, styles.css
 src/main.js          wiring: feed → panels + map, round playback queue
 src/feed.js          polling loops, back-off, pause when the tab is hidden
+../site.js           API keys and the site-wide dialog (shared with the other pages)
 src/map.js           canvas + SVG map and signing-round animation
 src/ui.js            logs, roster, stats, source status
 src/api/*            NEAR RPC, FastNear, NearBlocks, geo lookup (script only)

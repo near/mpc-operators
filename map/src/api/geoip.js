@@ -35,7 +35,15 @@ export async function resolveIPv4(host) {
  * @returns {Promise<GeoLocation>}
  */
 export async function locateHost(host) {
-  const ip = await resolveIPv4(host);
+  return locateIP(host, await resolveIPv4(host));
+}
+
+/**
+ * @param {string} host the name `ip` was resolved from, recorded as is
+ * @param {string} ip
+ * @returns {Promise<GeoLocation>}
+ */
+export async function locateIP(host, ip) {
   const r = await fetchJson("ipwho.is", `https://ipwho.is/${ip}`);
   if (!isRecord(r) || r.success !== true) throw new Error(`ipwho.is could not locate ${ip}: ${isRecord(r) ? stringOr(r.message) : ""}`);
   if (typeof r.latitude !== "number" || typeof r.longitude !== "number") throw new Error(`ipwho.is has no coordinates for ${ip}`);

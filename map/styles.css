@@ -1,94 +1,5 @@
 /* Layout: a signal console. Requests enter on the left, the map is the
    switching floor in the middle, delivered signatures leave on the right. */
-/* NEAR brand, from defuse-near's theme: Figtree, neutral grays, and the
-   #00EC97 green scale. Green carries meaning; everything else stays gray.
-   Flow colors: request = neutral, peer shares = deep green, delivered
-   signature = brand green. */
-:root {
-  color-scheme: dark;
-  --ground: #171717;          /* gray-900 */
-  --surface: #1f1f1f;         /* gray-850 */
-  --surface-raised: #262626;  /* gray-800 */
-  --line: rgba(255, 255, 255, 0.08);
-  --ink: #ffffff;
-  --ink-soft: #a3a3a3;        /* gray-400 */
-  --ink-faint: #737373;       /* gray-500 */
-  --accent: #00ec97;          /* green-500, the brand color */
-  --accent-ink: #00ec97;      /* green text that passes contrast on this ground */
-  --on-accent: #000000;
-  --request: #d4d4d4;         /* gray-300 */
-  --share: #009660;           /* green-700 */
-  --response: #00ec97;        /* green-500 */
-  --warning: #fac800;         /* yellow-400 */
-  --danger: #ff6467;          /* red-400 */
-  --map-ground: #0a0a0a;      /* gray-950 */
-  --map-land: #262626;
-  --map-border: #333333;
-  --map-grid: #141414;
-  --map-mesh: rgba(0, 236, 151, 0.06);
-
-  --font-body: "Figtree", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
-  --font-data: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
-
-  --step--1: 0.75rem;
-  --step-0: 0.8125rem;
-  --step-1: 0.9375rem;
-  --step-2: 1.25rem;
-  --step-3: 1.6rem;
-  --radius: 8px;
-  --gutter: 16px;
-}
-
-@media (prefers-color-scheme: light) {
-  :root:not([data-theme="dark"]) {
-    color-scheme: light;
-    --ground: #f2f2f2;
-    --surface: #ffffff;
-    --surface-raised: #f5f5f5;  /* gray-100 */
-    --line: #e5e5e5;            /* gray-200 */
-    --ink: #171717;
-    --ink-soft: #737373;
-    --ink-faint: #a3a3a3;
-    --accent: #00ec97;
-    --accent-ink: #06754e;      /* green-800 */
-    --on-accent: #000000;
-    --request: #525252;         /* gray-600 */
-    --share: #00c076;           /* green-600 */
-    --response: #009660;        /* green-700 */
-    --warning: #a65f00;         /* yellow-700 */
-    --danger: #e7000b;          /* red-600 */
-    --map-ground: #fafafa;
-    --map-land: #e5e5e5;
-    --map-border: #d4d4d4;
-    --map-grid: #efefef;
-    --map-mesh: rgba(0, 150, 96, 0.08);
-  }
-}
-
-:root[data-theme="light"] {
-  color-scheme: light;
-  --ground: #f2f2f2;
-  --surface: #ffffff;
-  --surface-raised: #f5f5f5;
-  --line: #e5e5e5;
-  --ink: #171717;
-  --ink-soft: #737373;
-  --ink-faint: #a3a3a3;
-  --accent: #00ec97;
-  --accent-ink: #06754e;
-  --on-accent: #000000;
-  --request: #525252;
-  --share: #00c076;
-  --response: #009660;
-  --warning: #a65f00;
-  --danger: #e7000b;
-  --map-ground: #fafafa;
-  --map-land: #e5e5e5;
-  --map-border: #d4d4d4;
-  --map-grid: #efefef;
-  --map-mesh: rgba(0, 150, 96, 0.08);
-}
-
 * { box-sizing: border-box; }
 
 html, body { height: 100%; }
@@ -116,6 +27,14 @@ a:focus-visible, button:focus-visible, [tabindex]:focus-visible, input:focus-vis
 ::selection { background: var(--accent); color: var(--on-accent); }
 
 h1, h2 { text-wrap: balance; margin: 0; }
+
+/* The site nav spans the full width, edge to edge above the console. */
+body > .site-nav {
+  margin: calc(-12px - env(safe-area-inset-top, 0px)) calc(-1 * var(--gutter)) 0;
+  padding-top: calc(10px + env(safe-area-inset-top, 0px));
+}
+
+.brand .site-tag { vertical-align: middle; margin-inline-start: 6px; letter-spacing: 0.08em; }
 
 /* ── Top bar ─────────────────────────────────────────────────────────── */
 
@@ -163,18 +82,6 @@ h1, h2 { text-wrap: balance; margin: 0; }
 .source-limited .dot { background: var(--warning); }
 .source-error .dot { background: var(--danger); }
 .source-idle .dot { animation: blink 1.2s ease-in-out infinite; }
-
-.button {
-  font: 500 var(--step-0) var(--font-body);
-  color: var(--ink);
-  background: var(--surface-raised);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  padding: 6px 12px;
-  cursor: pointer;
-}
-.button:hover { border-color: var(--ink-faint); }
-.button-primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
 
 .notice {
   margin: 0;
@@ -399,33 +306,6 @@ h1, h2 { text-wrap: balance; margin: 0; }
 .roster-bar { block-size: 4px; background: var(--line); border-radius: 2px; overflow: hidden; }
 .roster-bar > span { display: block; block-size: 100%; background: var(--accent); }
 .roster-count { font-family: var(--font-data); text-align: end; font-variant-numeric: tabular-nums; }
-
-/* ── Settings dialog ─────────────────────────────────────────────────── */
-
-.dialog {
-  inline-size: min(440px, calc(100vw - 2 * var(--gutter)));
-  background: var(--surface-raised);
-  color: var(--ink);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  padding: 20px;
-}
-.dialog::backdrop { background: color-mix(in srgb, var(--ground) 70%, transparent); }
-.dialog form { display: grid; gap: 8px; }
-.dialog h2 { font-size: var(--step-2); }
-.dialog p { margin: 0 0 6px; color: var(--ink-soft); }
-.dialog label { font-weight: 600; margin-top: 6px; }
-.dialog label span { font-weight: 400; color: var(--ink-faint); margin-inline-start: 6px; }
-.dialog input {
-  font: 400 var(--step-0) var(--font-data);
-  color: var(--ink);
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 4px;
-  padding: 7px 9px;
-}
-.dialog .hint { font-size: var(--step--1); margin-top: 6px; }
-.dialog-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px; }
 
 /* ── Motion ──────────────────────────────────────────────────────────── */
 

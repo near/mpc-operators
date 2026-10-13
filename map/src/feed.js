@@ -15,7 +15,7 @@ import { fetchDecodedSignatures } from "./api/nearblocks.js";
 import { Ledger, SIGNER_CONTRACT } from "./lib/ledger.js";
 
 /**
- * @typedef {import("./settings.js").ApiKeys} ApiKeys
+ * @typedef {import("../../site.js").ApiKeys} ApiKeys
  * @typedef {import("./lib/contract.js").SignerState} SignerState
  * @typedef {import("./lib/contract.js").Attestation} Attestation
  * @typedef {import("./lib/ledger.js").IngestResult} IngestResult
@@ -106,10 +106,10 @@ export class Feed extends EventTarget {
     } catch (error) {
       if (error instanceof HttpError && error.rateLimited) {
         delay = cadence.limited;
-        this.#setStatus(source, "limited", `${error.service} rate limit hit. Retrying in ${Math.round(delay / 60_000)} min${hasKey ? "" : ". Add an API key in Settings for more headroom"}.`);
+        this.#setStatus(source, "limited", `${error.service} rate limit hit. Retrying in ${Math.round(delay / 60_000)} min${hasKey ? "" : ". Add an API key (top right) for more headroom"}.`);
       } else if (error instanceof HttpError && error.unauthorized) {
         delay = cadence.limited;
-        this.#setStatus(source, "error", `${error.service} rejected the API key. Check it in Settings.`);
+        this.#setStatus(source, "error", `${error.service} rejected the API key. Check it under API keys.`);
       } else {
         delay = Math.min(delay * 4, 60_000);
         this.#setStatus(source, "error", error instanceof Error ? error.message : String(error));

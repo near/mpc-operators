@@ -9,18 +9,27 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+  <link rel="stylesheet" href="../site.css">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+  <nav class="site-nav" aria-label="Site">
+    <a class="site-brand" href="../">NEAR MPC</a>
+    <ul>
+      <li><a href="../">Operators</a></li>
+      <li><a href="../overview.html">Security</a></li>
+      <li><a href="./" aria-current="page">Live map <span class="site-tag">mainnet</span></a></li>
+    </ul>
+    <button id="api-keys" class="button" type="button">API keys</button>
+  </nav>
   <header class="bar">
     <div class="brand">
-      <h1>NEAR MPC Signing Map</h1>
+      <h1>NEAR MPC Signing Map <span class="site-tag">Mainnet only</span></h1>
       <p>Chain signatures on <code>v1.signer</code>, live from mainnet</p>
     </div>
     <dl id="stats" class="stats"></dl>
     <div class="bar-end">
       <ul id="sources" class="sources" aria-label="Data sources"></ul>
-      <button id="open-settings" class="button" type="button">API keys</button>
     </div>
   </header>
   <p id="notice" class="notice" role="status" hidden></p>
@@ -62,21 +71,6 @@
     </section>
   </main>
 
-  <dialog id="settings" class="dialog" aria-labelledby="settings-title">
-    <form id="settings-form" method="dialog">
-      <h2 id="settings-title">API keys</h2>
-      <p>Optional. Keys raise rate limits and stay in this browser; each is sent only to its own service.</p>
-      <label for="key-fastnear">FastNear <span>requests, responses, contract state</span></label>
-      <input id="key-fastnear" name="fastnear" type="password" autocomplete="off" spellcheck="false">
-      <label for="key-nearblocks">NearBlocks <span>destination chain decoding</span></label>
-      <input id="key-nearblocks" name="nearblocks" type="password" autocomplete="off" spellcheck="false">
-      <p class="hint">Without a key, NearBlocks allows 6 calls a minute and 333 a day, so destinations refresh every 90 s.</p>
-      <div class="dialog-actions">
-        <button id="close-settings" class="button" type="button">Cancel</button>
-        <button class="button button-primary" type="submit">Save keys</button>
-      </div>
-    </form>
-  </dialog>
 
   <script type="module" src="src/main.js"></script>
 </body>

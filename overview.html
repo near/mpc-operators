@@ -5,35 +5,30 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3C%3Fxml version='1.0' standalone='no'%3F%3E%3C!DOCTYPE svg PUBLIC '-//W3C//DTD SVG 20010904//EN' 'http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd'%3E%3Csvg version='1.0' xmlns='http://www.w3.org/2000/svg' width='32.000000pt' height='32.000000pt' viewBox='0 0 32.000000 32.000000' preserveAspectRatio='xMidYMid meet'%3E%3Cg transform='translate(0.000000,32.000000) scale(0.100000,-0.100000)' fill='%23000000' stroke='none'%3E%3Cpath d='M88 284 l-58 -35 0 -88 0 -89 61 -36 c33 -20 64 -36 69 -36 5 0 36 16 69 35 l61 36 0 89 0 89 -61 36 c-33 19 -65 35 -72 34 -7 0 -38 -16 -69 -35z m122 -120 c0 33 -2 37 -15 26 -19 -16 -19 -1 0 24 26 35 45 13 45 -54 0 -79 -18 -89 -63 -34 -73 88 -66 84 -67 35 0 -37 2 -42 15 -31 18 15 19 1 1 -22 -26 -35 -36 -20 -36 50 0 38 3 72 8 76 4 4 31 -19 59 -51 l53 -58 0 39z'/%3E%3C/g%3E%3C/svg%3E%0A" />
   <title>NEAR MPC — Network &amp; Security Overview</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+  <link rel="stylesheet" href="site.css">
   <style>
-    :root {
-      --bg: #0f1115;
-      --panel: #1a1d24;
-      --border: #2a2f3a;
-      --text: #e6e9ef;
-      --muted: #9aa3b2;
-      --accent: #5b8cff;
-      --accent-2: #1f2733;
-    }
     * { box-sizing: border-box; }
     body {
       margin: 0;
-      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-      background: var(--bg);
-      color: var(--text);
+      font-family: var(--font-body);
+      background: var(--ground);
+      color: var(--ink);
       line-height: 1.6;
     }
     .wrap { max-width: 820px; margin: 0 auto; padding: 32px 20px 64px; }
-    a { color: var(--accent); }
+    a { color: var(--accent-ink); }
     h1 { font-size: 1.6rem; margin: 0 0 4px; }
     h2 { font-size: 1.1rem; margin: 30px 0 6px; }
-    .sub { color: var(--muted); margin: 0 0 8px; font-size: 0.95rem; }
+    .sub { color: var(--ink-soft); margin: 0 0 8px; font-size: 0.95rem; }
     p { margin: 8px 0; }
     .lead { font-size: 1.02rem; }
     code {
-      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-      background: var(--accent-2);
-      border: 1px solid var(--border);
+      font-family: var(--font-data);
+      background: var(--surface-raised);
+      border: 1px solid var(--line);
       border-radius: 5px;
       padding: 1px 5px;
       font-size: 0.85em;
@@ -46,29 +41,29 @@
       margin: 22px 0 6px;
     }
     .stat {
-      background: var(--panel);
-      border: 1px solid var(--border);
+      background: var(--surface);
+      border: 1px solid var(--line);
       border-radius: 12px;
       padding: 18px 16px;
       text-align: center;
     }
     .stat .num {
-      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-family: var(--font-data);
       font-size: 2.8rem;
       font-weight: 700;
       line-height: 1;
-      color: var(--accent);
+      color: var(--accent-ink);
     }
-    .stat.target .num { color: var(--text); font-size: 2.2rem; }
-    .stat .lbl { color: var(--muted); font-size: 0.8rem; margin-top: 8px; }
-    .stats-note { color: var(--muted); font-size: 0.82rem; margin: 2px 2px 0; text-align: right; }
-    .stats-note a { color: var(--accent); }
+    .stat.target .num { color: var(--ink); font-size: 2.2rem; }
+    .stat .lbl { color: var(--ink-soft); font-size: 0.8rem; margin-top: 8px; }
+    .stats-note { color: var(--ink-soft); font-size: 0.82rem; margin: 2px 2px 0; text-align: right; }
+    .stats-note a { color: var(--accent-ink); }
     @media (max-width: 560px) { .stats { grid-template-columns: 1fr; } }
     ul { margin: 8px 0; padding-left: 22px; }
     li { margin: 4px 0; }
     .callout {
-      background: var(--panel);
-      border: 1px solid var(--border);
+      background: var(--surface);
+      border: 1px solid var(--line);
       border-left: 3px solid var(--accent);
       border-radius: 10px;
       padding: 16px 18px;
@@ -76,19 +71,19 @@
     }
     .callout h2 { margin-top: 0; }
     pre {
-      background: var(--bg);
-      border: 1px solid var(--border);
+      background: var(--ground);
+      border: 1px solid var(--line);
       border-radius: 8px;
       padding: 12px 14px;
       overflow-x: auto;
       margin: 12px 0;
     }
-    pre code { background: none; border: none; padding: 0; font-size: 0.82rem; color: var(--text); }
+    pre code { background: none; border: none; padding: 0; font-size: 0.82rem; color: var(--ink); }
     .footer {
       margin-top: 40px;
       padding-top: 20px;
-      border-top: 1px solid var(--border);
-      color: var(--muted);
+      border-top: 1px solid var(--line);
+      color: var(--ink-soft);
       font-size: 0.85rem;
     }
     .footer a { text-decoration: none; }
@@ -96,6 +91,15 @@
   </style>
 </head>
 <body>
+  <nav class="site-nav" aria-label="Site">
+    <a class="site-brand" href="./">NEAR MPC</a>
+    <ul>
+      <li><a href="./">Operators</a></li>
+      <li><a href="overview.html" aria-current="page">Security</a></li>
+      <li><a href="map/">Live map <span class="site-tag">mainnet</span></a></li>
+    </ul>
+    <button id="api-keys" class="button" type="button">API keys</button>
+  </nav>
   <div class="wrap">
     <h1>NEAR MPC — Network &amp; Security Overview</h1>
     <p class="sub">How the NEAR Multi-Party Computation (MPC) signing network is structured, secured, and independently verifiable.</p>
@@ -193,12 +197,14 @@
     </div>
   </div>
 
-  <script>
+  <script type="module">
+    import { keyHeaders, onKeysChange } from "./site.js";
+
     // Fetch the live threshold and operator count from the mainnet v1.signer
     // contract, reusing the same `state` call as the operator dashboard.
     const CONTRACT = "v1.signer";
     const RPCS = [
-      "https://free.rpc.fastnear.com",
+      "https://rpc.mainnet.fastnear.com",
       "https://rpc.mainnet.near.org",
       "https://near.lava.build",
     ];
@@ -206,7 +212,7 @@
     async function callView(rpcUrl, method, args) {
       const resp = await fetch(rpcUrl, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...keyHeaders(rpcUrl) },
         body: JSON.stringify({
           jsonrpc: "2.0",
           id: "mpc-overview",
@@ -262,6 +268,7 @@
     }
 
     loadStats();
+    onKeysChange(loadStats);
   </script>
 </body>
 </html>
