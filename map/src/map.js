@@ -82,6 +82,18 @@ const clamp01 = (v) => Math.max(0, Math.min(1, v));
  */
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
+/**
+ * Offset for the span [lo, hi], scaled by k, moved as little as possible from
+ * `t` so it covers [0, size] — or sits centred, when it is the shorter one.
+ * @param {number} t
+ * @param {number} lo
+ * @param {number} hi
+ * @param {number} k
+ * @param {number} size
+ */
+const cover = (t, lo, hi, k, size) =>
+  (hi - lo) * k >= size ? clamp(t, size - hi * k, -lo * k) : (size - (lo + hi) * k) / 2;
+
 export class NetworkMap {
   /** @type {PlacedNode[]} */
   #nodes = [];
@@ -106,6 +118,11 @@ export class NetworkMap {
   #highlighted = null;
   /** Zoom and pan on top of the fitted projection: screen = fitted * k + (x, y). */
   #view = { k: 1, x: 0, y: 0 };
+  /**
+   * The globe's outline in fitted screen coordinates; panning stays within it.
+   * @type {[[number, number], [number, number]]}
+   */
+  #sphere = [[0, 0], [0, 0]];
   #renderQueued = false;
   /** @type {ReturnType<typeof setTimeout> | undefined} */
   #hintTimer;
@@ -226,6 +243,7 @@ export class NetworkMap {
     }
     this.svg.setAttribute("viewBox", `0 0 ${this.#width} ${this.#height}`);
     this.#readColors();
+    this.#sphere = geoPath(this.#projection()).bounds({ type: "Sphere" });
     this.#setView(this.#view.k, this.#view.x, this.#view.y);
     this.#render();
   }
@@ -273,21 +291,34 @@ export class NetworkMap {
   // ── Zoom and pan ────────────────────────────────────────────────────────
 
   /**
-   * Sets the view, keeping the fitted frame covering the viewport so the map
-   * can't be dragged away or zoomed out past the operators.
+   * Nearest view to (k, x, y) that keeps the zoom between the operators' frame
+   * and MAX_ZOOM, and the globe covering the viewport — or centred, on an axis
+   * where the globe is the smaller — so the map can be panned anywhere in the
+   * world but not dragged off into the void.
+   * @param {number} k
+   * @param {number} x
+   * @param {number} y
+   */
+  #constrain(k, x, y) {
+    const [[left, top], [right, bottom]] = this.#sphere;
+    k = clamp(k, 1, MAX_ZOOM);
+    return { k, x: cover(x, left, right, k, this.#width), y: cover(y, top, bottom, k, this.#height) };
+  }
+
+  /**
    * @param {number} k
    * @param {number} x
    * @param {number} y
    */
   #setView(k, x, y) {
-    const w = this.#width;
-    const h = this.#height;
-    k = clamp(k, 1, MAX_ZOOM);
-    this.#view = { k, x: clamp(x, w - w * k, 0), y: clamp(y, h - h * k, 0) };
-    this.container.classList.toggle("is-zoomed", k > 1);
+    const view = this.#constrain(k, x, y);
+    const home = this.#constrain(1, 0, 0);
+    const atHome = view.k === home.k && view.x === home.x && view.y === home.y;
+    this.#view = view;
+    this.container.classList.toggle("is-zoomed", !atHome);
     for (const button of this.controls.querySelectorAll("button")) {
       const zoom = button.getAttribute("data-zoom");
-      button.disabled = zoom === "in" ? k >= MAX_ZOOM : k <= 1;
+      button.disabled = zoom === "in" ? view.k >= MAX_ZOOM : zoom === "out" ? view.k <= 1 : atHome;
     }
     this.#queueRender();
   }
