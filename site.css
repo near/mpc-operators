@@ -96,9 +96,17 @@
   --map-mesh: rgba(0, 150, 96, 0.08);
 }
 
+/* Some pages scroll and some don't; reserving the scrollbar's gutter keeps the
+   nav the same width on all of them. */
+html { scrollbar-gutter: stable; }
+
 /* ── Site nav ────────────────────────────────────────────────────────── */
 
+/* The nav is the same height on every page: each item is one --nav-row tall,
+   and the list keeps its own metrics so a page's element styles (its own ul,
+   li or a rules) don't leak in. It still wraps on narrow screens. */
 .site-nav {
+  --nav-row: 30px;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -108,18 +116,20 @@
   border-bottom: 1px solid var(--line);
   font: 500 0.875rem/1.4 var(--font-body);
 }
-.site-nav > .button { margin-inline-start: auto; }
+.site-nav > .button { margin-inline-start: auto; block-size: var(--nav-row); padding-block: 0; }
 @media (max-width: 600px) {
   .site-nav ul { order: 1; flex-basis: 100%; margin-inline: -10px; }
 }
-.site-brand { display: flex; }
+.site-brand { display: flex; align-items: center; block-size: var(--nav-row); }
 .site-brand img { display: block; block-size: 28px; inline-size: auto; }
 .site-nav ul { display: flex; flex: 1 1 auto; flex-wrap: wrap; gap: 4px; list-style: none; margin: 0; padding: 0; }
+.site-nav li { display: flex; margin: 0; padding: 0; }
 .site-nav ul a {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 10px;
+  block-size: var(--nav-row);
+  padding: 0 10px;
   border-radius: var(--radius);
   color: var(--ink-soft);
   text-decoration: none;
