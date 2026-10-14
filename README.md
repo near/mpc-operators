@@ -8,9 +8,9 @@ Live at **[mpc.nearone.org](https://mpc.nearone.org)**.
 
 | Page | File | What it shows |
 | --- | --- | --- |
-| Operators | [`index.html`](index.html) | The live operator set of the signer contract, the signing quorum (threshold / total) and each node's TEE status. Mainnet and testnet. |
+| Live map (front page) | [`index.html`](index.html) | Signature requests and the nodes answering them, on a world map. Mainnet only. Its code and data live in [`map/`](map/); see [`map/README.md`](map/README.md). |
+| Operators | [`operators.html`](operators.html) | The live operator set of the signer contract, the signing quorum (threshold / total) and each node's TEE status. Mainnet and testnet. |
 | Security | [`overview.html`](overview.html) | How the network is structured and secured, with live counts. |
-| Live map | [`map/`](map/) | Signature requests and the nodes answering them, on a world map. Mainnet only. See [`map/README.md`](map/README.md). |
 
 [`site.css`](site.css) and [`site.js`](site.js) hold what the pages share: the
 palette, the nav and the optional API keys (FastNear, NearBlocks), which are
@@ -52,7 +52,7 @@ secret raises its RPC rate limit.
 ## Editing operator names
 
 Account IDs are mapped to human-friendly names in the `OPERATORS` object inside
-`index.html`. Edit that map to add or rename operators.
+`operators.html`. Edit that map to add or rename operators.
 
 ## License
 

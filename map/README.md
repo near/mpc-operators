@@ -4,14 +4,17 @@ A live map of the NEAR Protocol MPC network signing chain signatures on
 `v1.signer` (mainnet only). Incoming requests on the left, the operators on a
 world map in the middle, delivered signatures on the right.
 
-It is the "Live map" page of the MPC info site and shares the site's nav,
-palette and API-keys dialog (`../site.css`, `../site.js`), so serve the
-repository root, not this directory:
+It is the front page of the MPC info site: the page itself is `../index.html`
+at the repository root, and it shares the site's nav, palette and API-keys
+dialog (`../site.css`, `../site.js`), so serve the repository root, not this
+directory:
 
 ```sh
 python3 -m http.server 8000   # from the repository root
-open http://localhost:8000/map/
+open http://localhost:8000/
 ```
+
+`index.html` in this directory only redirects old `/map/` links to the root.
 
 No build step and no dependencies. It's plain ES modules; `d3-geo`,
 `topojson-client` and the world atlas load from jsDelivr. The page needs to be
@@ -87,7 +90,8 @@ node --test "test/live/*.test.js"   # hits mainnet; FASTNEAR_API_KEY / NEARBLOCK
 ## Layout
 
 ```
-index.html, styles.css
+../index.html        the page, at the repository root (the site's front page)
+styles.css
 src/main.js          wiring: feed → panels + map, round playback queue
 src/feed.js          polling loops, back-off, pause when the tab is hidden
 ../site.js           API keys and the site-wide dialog (shared with the other pages)
