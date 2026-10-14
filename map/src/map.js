@@ -120,6 +120,8 @@ export class NetworkMap {
   #colors = {};
   /** @type {(account: string | null) => void} */
   #onHover = () => {};
+  /** @type {(account: string) => void} */
+  #onSelect = () => {};
   /** @type {string | null} */
   #highlighted = null;
   /** The --round-N colors, read from CSS. @type {string[]} */
@@ -179,6 +181,14 @@ export class NetworkMap {
   /** @param {(account: string | null) => void} handler */
   onHover(handler) {
     this.#onHover = handler;
+  }
+
+  /**
+   * A node was clicked or activated from the keyboard.
+   * @param {(account: string) => void} handler
+   */
+  onSelect(handler) {
+    this.#onSelect = handler;
   }
 
   /** @param {MapNode[]} nodes */
@@ -550,6 +560,13 @@ export class NetworkMap {
       g.addEventListener("pointerleave", leave);
       g.addEventListener("focus", enter);
       g.addEventListener("blur", leave);
+      g.addEventListener("click", () => this.#onSelect(node.account));
+      g.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          this.#onSelect(node.account);
+        }
+      });
       this.svg.append(g);
     }
   }

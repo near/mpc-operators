@@ -72,6 +72,33 @@ export function latencyMs(r) {
 }
 
 /**
+ * @typedef {{ count: number, latencies: number[], lastMs: number }} NodeStats
+ * What each node delivered in the tracked window.
+ * @param {SignRequest[]} requests
+ * @returns {Map<string, NodeStats>}
+ */
+function nodeStats(requests) {
+  /** @type {Map<string, NodeStats>} */
+  const byNode = new Map();
+  for (const r of requests) {
+    if (!r.response) continue;
+    const s = byNode.get(r.response.node) ?? { count: 0, latencies: [], lastMs: 0 };
+    s.count += 1;
+    const latency = latencyMs(r);
+    if (latency !== null) s.latencies.push(latency);
+    s.lastMs = Math.max(s.lastMs, r.response.timestampMs);
+    byNode.set(r.response.node, s);
+  }
+  for (const s of byNode.values()) s.latencies.sort((a, b) => a - b);
+  return byNode;
+}
+
+/** @param {number[]} sorted */
+function median(sorted) {
+  return sorted.length > 0 ? sorted[Math.floor(sorted.length / 2)] : null;
+}
+
+/**
  * @param {SignRequest} r
  * @param {SignerState | null} network
  */
@@ -108,6 +135,8 @@ export class Panels {
   #selected = null;
   /** Rounds playing on the map: receipt id → palette index. @type {Map<string, number>} */
   #live = new Map();
+  /** The node whose details are open in the roster, if any. @type {string | null} */
+  #openNode = null;
 
   /** @param {Document} doc */
   constructor(doc) {
@@ -267,16 +296,24 @@ export class Panels {
    * @param {SignerState} network
    * @param {Map<string, Attestation>} attestations by TLS key
    * @param {Map<string, GeoLocation | null>} locations by account
-   * @param {Map<string, number>} delivered by account
+   * @param {SignRequest[]} requests the tracked window, for each node's figures
    */
-  renderRoster(network, attestations, locations, delivered) {
-    const max = Math.max(1, ...delivered.values());
+  renderRoster(network, attestations, locations, requests) {
+    const now = Date.now();
+    const stats = nodeStats(requests);
+    const counts = [...stats.values()].map((s) => s.count);
+    const max = Math.max(1, ...counts);
+    const total = counts.reduce((sum, c) => sum + c, 0);
     const rows = [...network.participants]
-      .sort((a, b) => (delivered.get(b.account) ?? 0) - (delivered.get(a.account) ?? 0) || a.account.localeCompare(b.account))
+      .sort((a, b) => (stats.get(b.account)?.count ?? 0) - (stats.get(a.account)?.count ?? 0) || a.account.localeCompare(b.account))
       .map((p) => {
-        const tee = attestations.get(p.tlsPublicKey)?.kind ?? "none";
+        const attestation = attestations.get(p.tlsPublicKey);
+        const tee = attestation?.kind ?? "none";
         const where = locations.get(p.account);
-        const count = delivered.get(p.account) ?? 0;
+        const s = stats.get(p.account);
+        const count = s?.count ?? 0;
+        const open = this.#openNode === p.account;
+        const detailId = `node-detail-${p.id}`;
         const place = where === undefined ? "Locating…" : where === null ? "Not located yet" : `${flag(where.countryCode)} ${where.city}, ${where.countryCode}`;
         const teeText = { tdx: "TDX", mock: "No TEE", none: "No attestation" }[tee];
         const teeTitle = {
@@ -284,23 +321,96 @@ export class Panels {
           mock: "Mock attestation: not running in a TEE",
           none: "No attestation on record",
         }[tee];
-        const row = h("li", { class: "roster-row", "data-account": p.account, tabindex: "0" },
+        const row = h("div", {
+          class: `roster-row${open ? " is-open" : ""}`,
+          "data-account": p.account,
+          role: "button",
+          tabindex: "0",
+          "aria-expanded": open ? "true" : "false",
+          "aria-controls": detailId,
+        },
           h("span", { class: "roster-name", title: p.account }, fmt.account(p.account)),
-          h("span", {
-            class: "roster-place",
-            title: where ? `${where.provider} · ${where.ip}` : where === null ? "New operator: run scripts/locate-nodes.mjs to place it on the map" : undefined,
-          }, place),
+          h("span", { class: "roster-place", title: where ? `${where.city}, ${where.country}` : undefined }, place),
           h("span", { class: `tee tee-${tee}`, title: teeTitle }, teeText),
           h("span", { class: "roster-count", title: "Signatures this node delivered in the tracked window" }, String(count)),
+          h("span", { class: "chevron", "aria-hidden": "true" }, "›"),
           h("span", { class: "roster-bar", "aria-hidden": "true" }, h("span", { style: `inline-size:${(count / max) * 100}%` })),
         );
+        const detail = h("div", { class: "roster-detail", id: detailId, hidden: !open }, this.#nodeFacts(p, attestation, where, s, total, now));
         row.addEventListener("pointerenter", () => this.onHoverNode(p.account));
         row.addEventListener("pointerleave", () => this.onHoverNode(null));
         row.addEventListener("focus", () => this.onHoverNode(p.account));
         row.addEventListener("blur", () => this.onHoverNode(null));
-        return row;
+        row.addEventListener("click", () => this.toggleNode(p.account));
+        row.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            this.toggleNode(p.account);
+          }
+        });
+        return h("li", { class: "roster-item" }, row, detail);
       });
     this.roster.replaceChildren(...rows);
+  }
+
+  /**
+   * The dropdown under a node: everything the row only hints at.
+   * @param {import("./lib/contract.js").Participant} p
+   * @param {Attestation | undefined} attestation
+   * @param {GeoLocation | null | undefined} where
+   * @param {NodeStats | undefined} s
+   * @param {number} total signatures delivered by all nodes in the window
+   * @param {number} now
+   */
+  #nodeFacts(p, attestation, where, s, total, now) {
+    /** @param {string} label @param {(Node | string | null)[]} value */
+    const field = (label, ...value) => [h("dt", {}, label), h("dd", {}, ...value)];
+    const tee = attestation?.kind ?? "none";
+    const teeLine = {
+      tdx: "Intel TDX, attestation verified on-chain",
+      mock: "Mock attestation, not running in a TEE",
+      none: "No attestation on record",
+    }[tee];
+    const expires = attestation?.expiresAtMs ? `, valid until ${new Date(attestation.expiresAtMs).toLocaleDateString()}` : "";
+    const count = s?.count ?? 0;
+    const share = total > 0 ? ` (${Math.round((count / total) * 100)}% of the window)` : "";
+    const med = s ? median(s.latencies) : null;
+    return h("dl", { class: "node-facts" },
+      ...field("Account", link(`https://nearblocks.io/address/${p.account}`, p.account)),
+      ...field("Node URL", p.url ? link(p.url, p.url) : "—"),
+      ...field("Location", where ? `${where.city}, ${where.country}` : where === null ? "Not in the data file yet" : "Locating…"),
+      ...field("Hosting", where ? `${where.provider} · ${where.ip}` : "—"),
+      ...field("TEE", `${teeLine}${expires}`),
+      ...field("Delivered", `${count} signature${count === 1 ? "" : "s"}${share}`),
+      ...field("Median time", med === null ? "—" : `${fmt.seconds(med)} request → response`),
+      ...field("Last delivered", s ? h("time", { class: "ago", "data-ts": String(s.lastMs), datetime: new Date(s.lastMs).toISOString() }, fmt.ago(s.lastMs, now)) : "—"),
+    );
+  }
+
+  /**
+   * Opens one node's dropdown and closes any other; the same node again
+   * closes it. The choice survives re-renders.
+   * @param {string | null} account
+   */
+  toggleNode(account) {
+    this.#openNode = this.#openNode === account ? null : account;
+    for (const item of this.roster.querySelectorAll(".roster-item")) {
+      const row = item.querySelector(".roster-row");
+      const detail = item.querySelector(".roster-detail");
+      const open = row?.getAttribute("data-account") === this.#openNode;
+      row?.classList.toggle("is-open", open);
+      row?.setAttribute("aria-expanded", String(open));
+      if (detail instanceof HTMLElement) detail.hidden = !open;
+    }
+  }
+
+  /**
+   * Opens a node's dropdown and scrolls it into view (a click on the map).
+   * @param {string} account
+   */
+  openNode(account) {
+    if (this.#openNode !== account) this.toggleNode(account);
+    this.roster.querySelector(`.roster-row[data-account="${CSS.escape(account)}"]`)?.scrollIntoView({ block: "nearest" });
   }
 
   /** @param {string | null} account */

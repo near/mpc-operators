@@ -82,7 +82,7 @@ function renderActivity() {
   panels.renderStats(feed.network, feed.attestations, requests);
   if (feed.network) {
     const delivered = deliveredCounts();
-    panels.renderRoster(feed.network, feed.attestations, locations, delivered);
+    panels.renderRoster(feed.network, feed.attestations, locations, requests);
     map.setDelivered(delivered);
   }
 }
@@ -182,6 +182,8 @@ function hoverNode(account) {
 }
 panels.onHoverNode = hoverNode;
 map.onHover(hoverNode);
+// A node on the map opens its details in the Nodes panel.
+map.onSelect((account) => panels.openNode(account));
 // Rows borrow their round's color while it plays on the map.
 map.onRounds((live) => panels.setLiveRounds(live));
 
