@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-13T03:40:42.130Z",
+  "generatedAt": "2026-10-14T05:45:02.896Z",
   "nodes": {
     "astrostakers-mainnet.near": {
       "host": "near-mainnet-mpc.astrostakers.com",
@@ -72,8 +72,8 @@
       "provider": "Phoenixnap LLC"
     },
     "mpc-lgns.near": {
-      "host": "near.mpc.lgns.net",
-      "ip": "46.105.223.80",
+      "host": "137.74.108.92",
+      "ip": "137.74.108.92",
       "lat": 50.9865142,
       "lon": 2.128066,
       "city": "Gravelines",
