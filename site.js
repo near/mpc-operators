@@ -110,6 +110,15 @@ if (openButton) {
   const fastnear = /** @type {HTMLInputElement} */ (form.elements.namedItem("fastnear"));
   const nearblocks = /** @type {HTMLInputElement} */ (form.elements.namedItem("nearblocks"));
 
+  // The button shows a green dot while keys are saved (see site.css).
+  const reflect = (/** @type {ApiKeys} */ keys) => {
+    const hasKeys = Boolean(keys.fastnear || keys.nearblocks);
+    openButton.classList.toggle("has-keys", hasKeys);
+    openButton.title = hasKeys ? "API keys are set" : "";
+  };
+  reflect(loadKeys());
+  onKeysChange(reflect);
+
   openButton.addEventListener("click", () => {
     const keys = loadKeys();
     fastnear.value = keys.fastnear;
