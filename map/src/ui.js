@@ -221,7 +221,7 @@ export class Panels {
         latency !== null ? h("span", { class: "latency", title: "Request block to response block" }, fmt.seconds(latency)) : null,
         link(fmt.nearTxUrl(r.txHash), "request ↗", "hash", `Request tx ${r.txHash}`),
         response ? link(fmt.nearTxUrl(response.txHash), "respond ↗", "hash", `Respond tx ${response.txHash}`) : null,
-        dest && destTx && chain ? link(destTx, `${chain.name} tx ↗`, "hash", dest.txn) : null,
+        dest && destTx && chain ? link(destTx, `${chain.name} ↗`, "hash", `${chain.name} tx ${dest.txn}`) : null,
       ),
     );
     this.#wireRow(row, r);

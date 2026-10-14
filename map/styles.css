@@ -93,7 +93,9 @@ body > .site-nav {
   flex: 1 1 auto;
   min-height: 0;
   display: grid;
-  grid-template-columns: minmax(260px, 320px) minmax(0, 1fr) minmax(260px, 320px);
+  /* The Nodes column keeps more room than Signatures: its rows have four
+     cells, while a signature row's account names carry tooltips. */
+  grid-template-columns: minmax(240px, 280px) minmax(0, 1fr) minmax(260px, 310px);
   gap: 12px;
 }
 
@@ -152,6 +154,8 @@ body > .site-nav {
   min-width: 0;
 }
 .row-top { gap: 6px; }
+/* Requester and node share the line equally; longer names don't get squeezed first. */
+.row-top .who { flex: 1 1 0; }
 .who {
   font-family: var(--font-data);
   font-weight: 500;
