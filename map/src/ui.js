@@ -184,7 +184,9 @@ export class Panels {
    * One row per signature: the requester and, once it has answered, the node
    * with its country; then what was asked; then timing and the transactions.
    * A pending request shows "Signing…" where the node will go, and a request
-   * whose respond tx was never seen keeps a "Signed" pill there.
+   * whose respond tx was never seen keeps a "Signed" pill there. A failed
+   * request (its callback failed, with or without a node's response) is
+   * marked red and carries a "Failed" pill either way.
    * @param {SignRequest} r
    * @param {SignerState | null} network
    * @param {Map<string, GeoLocation | null>} locations
@@ -199,6 +201,7 @@ export class Panels {
     const where = response ? locations.get(response.node) : undefined;
     const kind = requestKind(r, network);
     const classes = ["log-row"];
+    if (r.status === "failed") classes.push("is-failed");
     if (this.#fresh.has(r.receiptId)) classes.push("is-fresh");
     if (this.#freshResponse.has(r.receiptId)) classes.push("is-fresh", "is-fresh-response");
     if (this.#selected === r.receiptId) classes.push("is-selected");
@@ -218,6 +221,7 @@ export class Panels {
         chain ? h("span", { class: "chain" }, chain.name) : null,
       ),
       h("div", { class: "row-bottom" },
+        r.status === "failed" && response ? statusPill("failed") : null,
         latency !== null ? h("span", { class: "latency", title: "Request block to response block" }, fmt.seconds(latency)) : null,
         link(fmt.nearTxUrl(r.txHash), "request ↗", "hash", `Request tx ${r.txHash}`),
         response ? link(fmt.nearTxUrl(response.txHash), "respond ↗", "hash", `Respond tx ${response.txHash}`) : null,
@@ -314,6 +318,8 @@ export class Panels {
    */
   renderStats(network, attestations, requests) {
     const resolved = requests.filter((r) => r.response !== null);
+    const signed = requests.filter((r) => r.status === "signed").length;
+    const failed = requests.filter((r) => r.status === "failed").length;
     const latencies = resolved.map((r) => latencyMs(r) ?? 0).sort((a, b) => a - b);
     const median = latencies.length > 0 ? latencies[Math.floor(latencies.length / 2)] : null;
     const oldest = requests.at(-1)?.timestampMs;
@@ -323,17 +329,21 @@ export class Panels {
     /**
      * @param {string} label
      * @param {string} value
-     * @param {string} [note]
+     * @param {(Node | string | null | false)[]} [note]
      */
     const stat = (label, value, note) =>
-      h("div", { class: "stat" }, h("dt", {}, label), h("dd", {}, value, note ? h("small", {}, note) : null));
+      h("div", { class: "stat" }, h("dt", {}, label), h("dd", {}, value, note ? h("small", {}, ...note) : null));
 
     this.stats.replaceChildren(
-      stat("Threshold", network ? `${network.threshold} of ${network.participants.length}` : "…", "nodes must sign"),
-      stat("In TEE", tdx === null ? "…" : `${tdx}`, "Intel TDX"),
-      stat("Signed", String(resolved.length), requests.length === 0 ? undefined : `of ${requests.length} requests${windowMin ? `, last ${windowMin} min` : ""}`),
-      stat("Median time", median === null ? "…" : fmt.seconds(median), "request → response"),
-      stat("Epoch", network ? String(network.epochId) : "…", network?.phase === "resharing" ? "resharing" : undefined),
+      stat("Threshold", network ? `${network.threshold} of ${network.participants.length}` : "…", ["nodes must sign"]),
+      stat("In TEE", tdx === null ? "…" : `${tdx}`, ["Intel TDX"]),
+      stat("Signed", String(signed), requests.length === 0 ? undefined : [
+        `of ${requests.length} requests`,
+        failed > 0 && h("span", { class: "stat-failed" }, `, ${failed} failed`),
+        windowMin ? `, last ${windowMin} min` : "",
+      ]),
+      stat("Median time", median === null ? "…" : fmt.seconds(median), ["request → response"]),
+      stat("Epoch", network ? String(network.epochId) : "…", network?.phase === "resharing" ? ["resharing"] : undefined),
     );
   }
 
