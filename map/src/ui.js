@@ -39,9 +39,10 @@ function h(tag, attrs = {}, ...children) {
  * @param {string} href
  * @param {string} text
  * @param {string} [className]
+ * @param {string} [title]
  */
-function link(href, text, className) {
-  return h("a", { href, target: "_blank", rel: "noopener noreferrer", class: className }, text);
+function link(href, text, className, title) {
+  return h("a", { href, target: "_blank", rel: "noopener noreferrer", class: className, title }, text);
 }
 
 /**
@@ -54,6 +55,15 @@ export function requestKind(r, network) {
   if (r.method === "request_app_private_key") return "Confidential key";
   const domain = network?.domains.find((d) => d.id === r.domainId);
   return domainLabel(domain);
+}
+
+/**
+ * The curve alone, for a row; the scheme it implies ("ECDSA", "EdDSA") stays
+ * in the tooltip.
+ * @param {string} kind
+ */
+function shortKind(kind) {
+  return kind.replace(/^(ECDSA|EdDSA)\s+/, "");
 }
 
 /** @param {SignRequest} r */
@@ -73,7 +83,7 @@ export function roundCaption(r, network) {
 
 /** @param {SignRequest["status"]} status */
 function statusPill(status) {
-  const text = { pending: "Signing", signed: "Signed", failed: "Failed" }[status];
+  const text = { pending: "Signing…", signed: "Signed", failed: "Failed" }[status];
   return h("span", { class: `pill pill-${status}` }, text);
 }
 
@@ -90,8 +100,10 @@ export class Panels {
   onSelect = () => {};
   /** @type {(account: string | null) => void} */
   onHoverNode = () => {};
-  /** @type {Set<string>} */
+  /** Receipt ids of requests that just arrived. @type {Set<string>} */
   #fresh = new Set();
+  /** Receipt ids whose response just landed. @type {Set<string>} */
+  #freshResponse = new Set();
   /** @type {string | null} */
   #selected = null;
   /** Rounds playing on the map: receipt id → palette index. @type {Map<string, number>} */
@@ -105,21 +117,22 @@ export class Panels {
       if (!el) throw new Error(`Missing #${id}`);
       return el;
     };
-    this.requestList = byId("request-log");
-    this.deliveredList = byId("delivered-log");
+    this.signatureList = byId("signature-log");
     this.roster = byId("roster");
     this.stats = byId("stats");
     this.sources = byId("sources");
     this.notice = byId("notice");
-    this.requestCount = byId("request-count");
-    this.deliveredCount = byId("delivered-count");
 
     setInterval(() => this.#tickAges(), 1000);
   }
 
-  /** @param {Iterable<string>} receiptIds */
-  markFresh(receiptIds) {
-    for (const id of receiptIds) this.#fresh.add(id);
+  /**
+   * @param {Iterable<string>} added receipt ids of new requests
+   * @param {Iterable<string>} resolved receipt ids whose response just landed
+   */
+  markFresh(added, resolved) {
+    for (const id of added) this.#fresh.add(id);
+    for (const id of resolved) this.#freshResponse.add(id);
   }
 
   /** @param {string | null} receiptId */
@@ -160,94 +173,62 @@ export class Panels {
    */
   renderLogs(requests, network, locations) {
     const now = Date.now();
-    const incoming = requests.slice(0, LOG_ROWS);
-    this.requestList.replaceChildren(...incoming.map((r) => this.#requestRow(r, network, now)));
-    this.requestCount.textContent = String(requests.length);
-
-    const delivered = requests
-      .filter((r) => r.response !== null)
-      .sort((a, b) => (b.response?.timestampMs ?? 0) - (a.response?.timestampMs ?? 0));
-    this.deliveredList.replaceChildren(...delivered.slice(0, LOG_ROWS).map((r) => this.#deliveredRow(r, network, locations, now)));
-    this.deliveredCount.textContent = String(delivered.length);
+    const rows = requests.slice(0, LOG_ROWS).map((r) => this.#signatureRow(r, network, locations, now));
+    this.signatureList.replaceChildren(...rows);
     this.#fresh.clear();
-
-    if (incoming.length === 0) this.requestList.append(h("li", { class: "log-empty" }, "Waiting for the first request from FastNear…"));
-    if (delivered.length === 0) this.deliveredList.append(h("li", { class: "log-empty" }, "Signatures appear here once a node responds."));
+    this.#freshResponse.clear();
+    if (rows.length === 0) this.signatureList.append(h("li", { class: "log-empty" }, "Waiting for the first request from FastNear…"));
   }
 
   /**
-   * @param {SignRequest} r
-   * @param {SignerState | null} network
-   * @param {number} now
-   */
-  #requestRow(r, network, now) {
-    const dest = r.destination;
-    const chain = dest ? fmt.chainInfo(dest.chain) : null;
-    const destTx = dest && chain ? chain.tx(dest.txn) : null;
-    const latency = latencyMs(r);
-    const row = h(
-      "li",
-      {
-        class: `log-row${this.#fresh.has(r.receiptId) ? " is-fresh" : ""}${this.#selected === r.receiptId ? " is-selected" : ""}`,
-        "data-receipt": r.receiptId,
-        tabindex: "0",
-      },
-      h("div", { class: "row-top" },
-        h("span", { class: "who", title: r.requester }, fmt.account(r.requester)),
-        h("time", { class: "ago", "data-ts": String(r.timestampMs), datetime: new Date(r.timestampMs).toISOString() }, fmt.ago(r.timestampMs, now)),
-      ),
-      h("div", { class: "row-mid" },
-        h("span", { class: "kind" }, requestKind(r, network)),
-        r.path ? h("span", { class: "path", title: `Derivation path: ${r.path}` }, fmt.middle(r.path, 10)) : null,
-        chain ? h("span", { class: "chain" }, chain.name) : null,
-      ),
-      h("div", { class: "row-bottom" },
-        statusPill(r.status),
-        latency !== null ? h("span", { class: "latency", title: "Request block to response block" }, fmt.seconds(latency)) : null,
-        link(fmt.nearTxUrl(r.txHash), fmt.middle(r.txHash, 5), "hash"),
-        destTx && chain ? link(destTx, `${chain.name} tx ↗`, "hash") : null,
-      ),
-    );
-    this.#wireRow(row, r);
-    return row;
-  }
-
-  /**
+   * One row per signature: the requester and, once it has answered, the node
+   * with its country; then what was asked; then timing and the transactions.
+   * A pending request shows "Signing…" where the node will go, and a request
+   * whose respond tx was never seen keeps a "Signed" pill there.
    * @param {SignRequest} r
    * @param {SignerState | null} network
    * @param {Map<string, GeoLocation | null>} locations
    * @param {number} now
    */
-  #deliveredRow(r, network, locations, now) {
+  #signatureRow(r, network, locations, now) {
     const response = r.response;
-    if (!response) throw new Error("delivered row without response");
-    const where = locations.get(response.node);
+    const dest = r.destination;
+    const chain = dest ? fmt.chainInfo(dest.chain) : null;
+    const destTx = dest && chain ? chain.tx(dest.txn) : null;
     const latency = latencyMs(r);
+    const where = response ? locations.get(response.node) : undefined;
+    const kind = requestKind(r, network);
+    const classes = ["log-row"];
+    if (this.#fresh.has(r.receiptId)) classes.push("is-fresh");
+    if (this.#freshResponse.has(r.receiptId)) classes.push("is-fresh", "is-fresh-response");
+    if (this.#selected === r.receiptId) classes.push("is-selected");
     const row = h(
       "li",
-      {
-        class: `log-row${this.#fresh.has(r.receiptId) ? " is-fresh" : ""}${this.#selected === r.receiptId ? " is-selected" : ""}`,
-        "data-receipt": r.receiptId,
-        "data-node": response.node,
-        tabindex: "0",
-      },
+      { class: classes.join(" "), "data-receipt": r.receiptId, "data-node": response?.node, tabindex: "0" },
       h("div", { class: "row-top" },
-        h("span", { class: "who node-name", title: response.node }, fmt.account(response.node)),
-        h("time", { class: "ago", "data-ts": String(response.timestampMs), datetime: new Date(response.timestampMs).toISOString() }, fmt.ago(response.timestampMs, now)),
+        h("span", { class: "who", title: r.requester }, fmt.account(r.requester)),
+        h("span", { class: "arrow", "aria-hidden": "true" }, "→"),
+        response ? h("span", { class: "who node-name", title: response.node }, fmt.account(response.node)) : statusPill(r.status),
+        where ? h("span", { class: "flag", title: `${where.city}, ${where.country}` }, flag(where.countryCode)) : null,
+        h("time", { class: "ago", "data-ts": String(r.timestampMs), datetime: new Date(r.timestampMs).toISOString() }, fmt.ago(r.timestampMs, now)),
       ),
       h("div", { class: "row-mid" },
-        where ? h("span", { class: "place" }, `${flag(where.countryCode)} ${where.city || where.country}`) : null,
-        latency !== null ? h("span", { class: "latency", title: "Request block to response block" }, fmt.seconds(latency)) : null,
-        h("span", { class: "kind" }, r.destination ? fmt.chainInfo(r.destination.chain).name : requestKind(r, network)),
+        h("span", { class: "kind", title: kind }, shortKind(kind)),
+        r.path ? h("span", { class: "path", title: `Derivation path: ${r.path}` }, fmt.middle(r.path, 10)) : null,
+        chain ? h("span", { class: "chain" }, chain.name) : null,
       ),
       h("div", { class: "row-bottom" },
-        h("span", { class: "for" }, "for ", h("span", { title: r.requester }, fmt.account(r.requester))),
-        link(fmt.nearTxUrl(response.txHash), fmt.middle(response.txHash, 5), "hash"),
+        latency !== null ? h("span", { class: "latency", title: "Request block to response block" }, fmt.seconds(latency)) : null,
+        link(fmt.nearTxUrl(r.txHash), "request ↗", "hash", `Request tx ${r.txHash}`),
+        response ? link(fmt.nearTxUrl(response.txHash), "respond ↗", "hash", `Respond tx ${response.txHash}`) : null,
+        dest && destTx && chain ? link(destTx, `${chain.name} tx ↗`, "hash", dest.txn) : null,
       ),
     );
     this.#wireRow(row, r);
-    row.addEventListener("pointerenter", () => this.onHoverNode(response.node));
-    row.addEventListener("pointerleave", () => this.onHoverNode(null));
+    if (response) {
+      row.addEventListener("pointerenter", () => this.onHoverNode(response.node));
+      row.addEventListener("pointerleave", () => this.onHoverNode(null));
+    }
     return row;
   }
 
@@ -306,8 +287,8 @@ export class Panels {
             title: where ? `${where.provider} · ${where.ip}` : where === null ? "New operator: run scripts/locate-nodes.mjs to place it on the map" : undefined,
           }, place),
           h("span", { class: `tee tee-${tee}`, title: teeTitle }, teeText),
-          h("span", { class: "roster-bar", "aria-hidden": "true" }, h("span", { style: `inline-size:${(count / max) * 100}%` })),
           h("span", { class: "roster-count", title: "Signatures this node delivered in the tracked window" }, String(count)),
+          h("span", { class: "roster-bar", "aria-hidden": "true" }, h("span", { style: `inline-size:${(count / max) * 100}%` })),
         );
         row.addEventListener("pointerenter", () => this.onHoverNode(p.account));
         row.addEventListener("pointerleave", () => this.onHoverNode(null));
@@ -350,7 +331,7 @@ export class Panels {
     this.stats.replaceChildren(
       stat("Threshold", network ? `${network.threshold} of ${network.participants.length}` : "…", "nodes must sign"),
       stat("In TEE", tdx === null ? "…" : `${tdx}`, "Intel TDX"),
-      stat("Signed", String(resolved.length), windowMin ? `last ${windowMin} min` : undefined),
+      stat("Signed", String(resolved.length), requests.length === 0 ? undefined : `of ${requests.length} requests${windowMin ? `, last ${windowMin} min` : ""}`),
       stat("Median time", median === null ? "…" : fmt.seconds(median), "request → response"),
       stat("Epoch", network ? String(network.epochId) : "…", network?.phase === "resharing" ? "resharing" : undefined),
     );

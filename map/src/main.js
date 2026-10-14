@@ -155,7 +155,7 @@ feed.addEventListener("requests", (event) => {
   if (!(event instanceof CustomEvent)) return;
   /** @type {{ result: IngestResult, backfill: boolean }} */
   const { result, backfill } = event.detail;
-  if (!backfill) panels.markFresh([...result.added, ...result.resolved].map((r) => r.receiptId));
+  if (!backfill) panels.markFresh(result.added.map((r) => r.receiptId), result.resolved.map((r) => r.receiptId));
   renderActivity();
   if (!backfill) enqueue(result.resolved);
   else if (!backfillReplayed && result.resolved.length > 0) {

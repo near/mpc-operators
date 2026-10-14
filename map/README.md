@@ -1,8 +1,9 @@
 # NEAR MPC Signing Map
 
 A live map of the NEAR Protocol MPC network signing chain signatures on
-`v1.signer` (mainnet only). Incoming requests on the left, the operators on a
-world map in the middle, delivered signatures on the right.
+`v1.signer` (mainnet only). Signatures on the left, one row per request with
+the node that answered it, the operators on a world map in the middle, the
+nodes on the right.
 
 It is the front page of the MPC info site: the page itself is `../index.html`
 at the repository root, and it shares the site's nav, palette and API-keys
@@ -45,13 +46,12 @@ chain.
 
 The other threshold−1 participants exchange shares with the leader over the
 nodes' private TLS mesh, which never touches the chain. The animation picks a
-stable stand-in peer set per request (`src/lib/cohort.js`), and the legend says
-so.
+stable stand-in peer set per request (`src/lib/cohort.js`).
 
 Each signature in flight plays in its own color (`--round-N` in `site.css`),
 with the leader ringed and tagged, so parallel rounds can be told apart. The
-matching rows in the Requests and Delivered panels take that color until the
-round ends, then settle back to green. The leader itself is real: it is the
+matching row in the Signatures panel takes that color until the round ends,
+then settles back to green. The leader itself is real: it is the
 node that signed the `respond` tx.
 
 ## API keys
