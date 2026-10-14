@@ -85,7 +85,7 @@ index.html, styles.css
 src/main.js          wiring: feed → panels + map, round playback queue
 src/feed.js          polling loops, back-off, pause when the tab is hidden
 ../site.js           API keys and the site-wide dialog (shared with the other pages)
-src/map.js           canvas + SVG map and signing-round animation
+src/map.js           canvas + SVG map, zoom/pan, and signing-round animation
 src/ui.js            logs, roster, stats, source status
 src/api/*            NEAR RPC, FastNear, NearBlocks, geo lookup (script only)
 src/lib/*            pure logic, unit tested (ledger, contract, cohort, geo, format)
