@@ -170,8 +170,8 @@ feed.addEventListener("status", () => panels.renderSources(feed.status));
 
 // ── Interaction ───────────────────────────────────────────────────────────
 
+// Opening a signature's dropdown replays its round on the map.
 panels.onSelect = (r) => {
-  panels.select(r.receiptId);
   if (r.response) playRound(r);
 };
 
