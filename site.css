@@ -105,7 +105,8 @@
 @media (max-width: 600px) {
   .site-nav ul { order: 1; flex-basis: 100%; margin-inline: -10px; }
 }
-.site-brand { color: var(--ink); font-weight: 700; letter-spacing: -0.01em; text-decoration: none; }
+.site-brand { display: flex; }
+.site-brand img { display: block; block-size: 28px; inline-size: auto; }
 .site-nav ul { display: flex; flex: 1 1 auto; flex-wrap: wrap; gap: 4px; list-style: none; margin: 0; padding: 0; }
 .site-nav ul a {
   display: inline-flex;
