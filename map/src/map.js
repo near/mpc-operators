@@ -8,6 +8,11 @@
 //   │ svg.nodes     markers, labels, hover  │  DOM, so it stays crisp + focusable
 //   └───────────────────────────────────────┘
 //
+// Zoom and pan rescale the projection rather than the pixels, so coastlines
+// stay sharp, markers keep their size, and clustered nodes pull apart as you
+// zoom in. Wheel (or trackpad pinch), drag, touch pinch, double-click and the
+// +/−/Fit buttons all drive the same view transform.
+//
 // One signing round, as animated (times in ms from the start). Every round
 // in flight plays in its own color from the --round-N palette, so parallel
 // signatures stay apart, and its leader wears a ring and a "leader" tag from
@@ -27,6 +32,7 @@ const WORLD_URL = "https://cdn.jsdelivr.net/npm/world-atlas@2.0.2/countries-110m
 const SVG_NS = "http://www.w3.org/2000/svg";
 const ROUND_MS = 3600;
 const MARKER_SPACING_PX = 17;
+const MAX_ZOOM = 16;
 /** Size of the --round-N palette in site.css. */
 const ROUND_COLORS = 5;
 
@@ -75,6 +81,25 @@ const easeInOut = (t) => (t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2);
 /** @param {number} v */
 const clamp01 = (v) => Math.max(0, Math.min(1, v));
 
+/**
+ * @param {number} v
+ * @param {number} lo
+ * @param {number} hi
+ */
+const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+
+/**
+ * Offset for the span [lo, hi], scaled by k, moved as little as possible from
+ * `t` so it covers [0, size] — or sits centred, when it is the shorter one.
+ * @param {number} t
+ * @param {number} lo
+ * @param {number} hi
+ * @param {number} k
+ * @param {number} size
+ */
+const cover = (t, lo, hi, k, size) =>
+  (hi - lo) * k >= size ? clamp(t, size - hi * k, -lo * k) : (size - (lo + hi) * k) / 2;
+
 export class NetworkMap {
   /** @type {PlacedNode[]} */
   #nodes = [];
@@ -102,6 +127,16 @@ export class NetworkMap {
   /** @type {(live: Map<string, number>) => void} */
   #onRounds = () => {};
   #liveKey = "";
+  /** Zoom and pan on top of the fitted projection: screen = fitted * k + (x, y). */
+  #view = { k: 1, x: 0, y: 0 };
+  /**
+   * The globe's outline in fitted screen coordinates; panning stays within it.
+   * @type {[[number, number], [number, number]]}
+   */
+  #sphere = [[0, 0], [0, 0]];
+  #renderQueued = false;
+  /** @type {ReturnType<typeof setTimeout> | undefined} */
+  #hintTimer;
 
   /** @param {HTMLElement} container */
   constructor(container) {
@@ -114,7 +149,17 @@ export class NetworkMap {
     this.svg.classList.add("map-nodes");
     this.svg.setAttribute("role", "group");
     this.svg.setAttribute("aria-label", "MPC nodes");
-    container.append(this.base, this.fx, this.svg);
+    this.controls = document.createElement("div");
+    this.controls.className = "map-controls";
+    this.controls.innerHTML = `
+      <button type="button" data-zoom="in" aria-label="Zoom in" title="Zoom in">+</button>
+      <button type="button" data-zoom="out" aria-label="Zoom out" title="Zoom out">−</button>
+      <button type="button" data-zoom="fit" aria-label="Fit all nodes" title="Fit all nodes">Fit</button>`;
+    this.hint = document.createElement("p");
+    this.hint.className = "map-hint";
+    this.hint.textContent = `Hold ${/Mac|iPhone|iPad/.test(navigator.platform) ? "⌘" : "Ctrl"} and scroll to zoom`;
+    container.append(this.base, this.fx, this.svg, this.controls, this.hint);
+    this.#bindGestures();
 
     new ResizeObserver(() => this.#layout()).observe(container);
     matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => this.#layout());
@@ -236,8 +281,39 @@ export class NetworkMap {
     }
     this.svg.setAttribute("viewBox", `0 0 ${this.#width} ${this.#height}`);
     this.#readColors();
+    this.#sphere = geoPath(this.#projection()).bounds({ type: "Sphere" });
+    this.#setView(this.#view.k, this.#view.x, this.#view.y);
+    this.#render();
+  }
 
+  #queueRender() {
+    if (this.#renderQueued) return;
+    this.#renderQueued = true;
+    requestAnimationFrame(() => {
+      this.#renderQueued = false;
+      this.#render();
+    });
+  }
+
+  #render() {
+    if (this.#width === 0 || this.#height === 0) return;
     const projection = this.#projection();
+
+    // v1.signer has no location. Park it below the operators' center of mass,
+    // over open water on the default framing; it then zooms with the map.
+    const fitted = /** @type {[number, number][]} */ (this.#nodes.map((n) => projection([n.lon, n.lat])).filter(Boolean));
+    const hub = fitted.length > 0
+      ? {
+        x: fitted.reduce((s, p) => s + p[0], 0) / fitted.length,
+        y: Math.min(this.#height - 40, Math.max(...fitted.map((p) => p[1])) + this.#height * 0.16),
+      }
+      : { x: this.#width / 2, y: this.#height * 0.6 };
+
+    const { k, x, y } = this.#view;
+    const [tx, ty] = projection.translate();
+    projection.scale(projection.scale() * k).translate([tx * k + x, ty * k + y]);
+    this.#hub = { x: hub.x * k + x, y: hub.y * k + y };
+
     const projected = this.#nodes.flatMap((n) => {
       const p = projection([n.lon, n.lat]);
       return p ? [{ ...n, x: p[0], y: p[1] }] : [];
@@ -245,20 +321,142 @@ export class NetworkMap {
     this.#nodes = spreadOverlapping(projected, MARKER_SPACING_PX);
     this.#byAccount = new Map(this.#nodes.map((n) => [n.account, n]));
 
-    // v1.signer has no location. Park it below the operators' center of mass,
-    // over open water on the default framing.
-    if (this.#nodes.length > 0) {
-      const mx = this.#nodes.reduce((s, n) => s + n.cx, 0) / this.#nodes.length;
-      const maxY = Math.max(...this.#nodes.map((n) => n.cy));
-      this.#hub = { x: mx, y: Math.min(this.#height - 40, maxY + this.#height * 0.16) };
-    } else {
-      this.#hub = { x: this.#width / 2, y: this.#height * 0.6 };
-    }
-
     this.#drawBase(projection);
     this.#drawNodes();
     if (this.#frame === 0) this.#frame = requestAnimationFrame((t) => this.#draw(t));
   }
+
+  // ── Zoom and pan ────────────────────────────────────────────────────────
+
+  /**
+   * Nearest view to (k, x, y) that keeps the zoom between the operators' frame
+   * and MAX_ZOOM, and the globe covering the viewport — or centred, on an axis
+   * where the globe is the smaller — so the map can be panned anywhere in the
+   * world but not dragged off into the void.
+   * @param {number} k
+   * @param {number} x
+   * @param {number} y
+   */
+  #constrain(k, x, y) {
+    const [[left, top], [right, bottom]] = this.#sphere;
+    k = clamp(k, 1, MAX_ZOOM);
+    return { k, x: cover(x, left, right, k, this.#width), y: cover(y, top, bottom, k, this.#height) };
+  }
+
+  /**
+   * @param {number} k
+   * @param {number} x
+   * @param {number} y
+   */
+  #setView(k, x, y) {
+    const view = this.#constrain(k, x, y);
+    const home = this.#constrain(1, 0, 0);
+    const atHome = view.k === home.k && view.x === home.x && view.y === home.y;
+    this.#view = view;
+    this.container.classList.toggle("is-zoomed", !atHome);
+    for (const button of this.controls.querySelectorAll("button")) {
+      const zoom = button.getAttribute("data-zoom");
+      button.disabled = zoom === "in" ? view.k >= MAX_ZOOM : zoom === "out" ? view.k <= 1 : atHome;
+    }
+    this.#queueRender();
+  }
+
+  /**
+   * @param {number} factor
+   * @param {number} px screen point that stays put
+   * @param {number} py
+   */
+  #zoomAt(factor, px = this.#width / 2, py = this.#height / 2) {
+    const { k, x, y } = this.#view;
+    const next = clamp(k * factor, 1, MAX_ZOOM);
+    this.#setView(next, px - (px - x) * (next / k), py - (py - y) * (next / k));
+  }
+
+  #showHint() {
+    this.hint.classList.add("is-visible");
+    clearTimeout(this.#hintTimer);
+    this.#hintTimer = setTimeout(() => this.hint.classList.remove("is-visible"), 1400);
+  }
+
+  #bindGestures() {
+    const el = this.container;
+    /** @param {{ clientX: number, clientY: number }} e */
+    const local = (e) => {
+      const r = el.getBoundingClientRect();
+      return { x: e.clientX - r.left, y: e.clientY - r.top };
+    };
+
+    this.controls.addEventListener("click", (e) => {
+      const zoom = e.target instanceof Element ? e.target.closest("button")?.getAttribute("data-zoom") : null;
+      if (zoom === "in") this.#zoomAt(2);
+      else if (zoom === "out") this.#zoomAt(0.5);
+      else if (zoom === "fit") this.#setView(1, 0, 0);
+    });
+
+    el.addEventListener("wheel", (e) => {
+      // Where the page itself scrolls (narrow layouts), plain wheel keeps
+      // scrolling it; Ctrl/⌘ or a trackpad pinch (which sets ctrlKey) zooms.
+      const root = document.documentElement;
+      if (root.scrollHeight > root.clientHeight && !e.ctrlKey && !e.metaKey) {
+        this.#showHint();
+        return;
+      }
+      e.preventDefault();
+      const rate = e.deltaMode === 1 ? 0.05 : e.deltaMode === 2 ? 1 : 0.002;
+      const p = local(e);
+      this.#zoomAt(2 ** (-e.deltaY * rate * (e.ctrlKey ? 10 : 1)), p.x, p.y);
+    }, { passive: false });
+
+    el.addEventListener("dblclick", (e) => {
+      if (e.target instanceof Element && e.target.closest(".map-controls")) return;
+      const p = local(e);
+      this.#zoomAt(e.shiftKey ? 0.5 : 2, p.x, p.y);
+    });
+
+    // Drag to pan; two pointers pinch. One finger on an unzoomed map is left
+    // to the browser (touch-action in CSS) so the page still scrolls.
+    /** @type {Map<number, Point>} */
+    const pointers = new Map();
+    /** @type {(Point & { dist: number }) | null} */
+    let last = null;
+    const gesture = () => {
+      const [a, b] = pointers.values();
+      if (!a) return null;
+      if (!b) return { ...a, dist: 0 };
+      return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2, dist: Math.hypot(a.x - b.x, a.y - b.y) };
+    };
+    /** @param {PointerEvent} e */
+    const release = (e) => {
+      if (!pointers.delete(e.pointerId)) return;
+      last = gesture();
+      if (pointers.size === 0) el.classList.remove("is-dragging");
+    };
+
+    el.addEventListener("pointerdown", (e) => {
+      if (e.button !== 0 || (e.target instanceof Element && e.target.closest(".map-controls"))) return;
+      pointers.set(e.pointerId, local(e));
+      last = gesture();
+      // Markers are rebuilt while dragging; keep the gesture on the container.
+      el.setPointerCapture(e.pointerId);
+    });
+    el.addEventListener("pointermove", (e) => {
+      if (!pointers.has(e.pointerId)) return;
+      pointers.set(e.pointerId, local(e));
+      const now = gesture();
+      if (!now || !last) return;
+      const { k, x, y } = this.#view;
+      const next = now.dist > 0 && last.dist > 0 ? clamp(k * (now.dist / last.dist), 1, MAX_ZOOM) : k;
+      if (next !== k || now.x !== last.x || now.y !== last.y) {
+        el.classList.add("is-dragging");
+        this.#setView(next, now.x - (last.x - x) * (next / k), now.y - (last.y - y) * (next / k));
+      }
+      last = now;
+    });
+    el.addEventListener("pointerup", release);
+    el.addEventListener("pointercancel", release);
+  }
+
+  // ── Drawing ─────────────────────────────────────────────────────────────
 
   /** @param {ReturnType<typeof geoNaturalEarth1>} projection */
   #drawBase(projection) {
