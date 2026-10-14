@@ -45,6 +45,12 @@ nodes' private TLS mesh, which never touches the chain. The animation picks a
 stable stand-in peer set per request (`src/lib/cohort.js`), and the legend says
 so.
 
+Each signature in flight plays in its own color (`--round-N` in `site.css`),
+with the leader ringed and tagged, so parallel rounds can be told apart. The
+matching rows in the Requests and Delivered panels take that color until the
+round ends, then settle back to green. The leader itself is real: it is the
+node that signed the `respond` tx.
+
 ## API keys
 
 Click **API keys** in the site nav. The keys are shared by every page of the

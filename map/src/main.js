@@ -181,6 +181,8 @@ function hoverNode(account) {
 }
 panels.onHoverNode = hoverNode;
 map.onHover(hoverNode);
+// Rows borrow their round's color while it plays on the map.
+map.onRounds((live) => panels.setLiveRounds(live));
 
 // Keys are entered in the site-wide dialog (site.js).
 onKeysChange((keys) => feed.setKeys(keys));

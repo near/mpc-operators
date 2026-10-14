@@ -47,9 +47,8 @@
     <section class="stage" aria-label="Network map">
       <div id="map" class="map" role="img" aria-label="World map of MPC nodes with animated signing rounds"></div>
       <ul class="legend">
-        <li><span class="swatch swatch-request"></span>Request lands on-chain; every node sees it</li>
-        <li><span class="swatch swatch-share"></span>Peers send signature shares to the leader <em>(peer set illustrative)</em></li>
-        <li><span class="swatch swatch-response"></span>Leader submits <code>respond()</code></li>
+        <li><span class="swatch swatch-rounds"></span>One color per signature in flight; its rows in the panels match until the round ends</li>
+        <li><span class="swatch-leader"></span>Ringed and tagged: the leader, which gathers the peers' shares and submits <code>respond()</code> <em>(peer set illustrative)</em></li>
         <li><span class="swatch-node"></span>Ring: node runs in Intel TDX</li>
         <li>Scroll or pinch to zoom, drag to pan</li>
       </ul>

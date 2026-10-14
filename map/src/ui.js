@@ -94,6 +94,8 @@ export class Panels {
   #fresh = new Set();
   /** @type {string | null} */
   #selected = null;
+  /** Rounds playing on the map: receipt id → palette index. @type {Map<string, number>} */
+  #live = new Map();
 
   /** @param {Document} doc */
   constructor(doc) {
@@ -129,6 +131,29 @@ export class Panels {
   }
 
   /**
+   * Colors the rows of the signatures playing on the map; the rest settle
+   * back to green.
+   * @param {Map<string, number>} live receipt id → palette index
+   */
+  setLiveRounds(live) {
+    this.#live = live;
+    for (const row of document.querySelectorAll(".log-row[data-receipt]")) {
+      if (row instanceof HTMLElement) this.#applyLive(row, row.getAttribute("data-receipt"));
+    }
+  }
+
+  /**
+   * @param {HTMLElement} row
+   * @param {string | null} receiptId
+   */
+  #applyLive(row, receiptId) {
+    const color = receiptId === null ? undefined : this.#live.get(receiptId);
+    row.classList.toggle("is-live", color !== undefined);
+    if (color === undefined) row.style.removeProperty("--round");
+    else row.style.setProperty("--round", `var(--round-${color + 1})`);
+  }
+
+  /**
    * @param {SignRequest[]} requests newest first
    * @param {SignerState | null} network
    * @param {Map<string, GeoLocation | null>} locations by account
@@ -159,6 +184,7 @@ export class Panels {
     const dest = r.destination;
     const chain = dest ? fmt.chainInfo(dest.chain) : null;
     const destTx = dest && chain ? chain.tx(dest.txn) : null;
+    const latency = latencyMs(r);
     const row = h(
       "li",
       {
@@ -177,6 +203,7 @@ export class Panels {
       ),
       h("div", { class: "row-bottom" },
         statusPill(r.status),
+        latency !== null ? h("span", { class: "latency", title: "Request block to response block" }, fmt.seconds(latency)) : null,
         link(fmt.nearTxUrl(r.txHash), fmt.middle(r.txHash, 5), "hash"),
         destTx && chain ? link(destTx, `${chain.name} tx ↗`, "hash") : null,
       ),
@@ -229,6 +256,7 @@ export class Panels {
    * @param {SignRequest} r
    */
   #wireRow(row, r) {
+    this.#applyLive(row, r.receiptId);
     const choose = (/** @type {Event} */ e) => {
       if (e.target instanceof HTMLElement && e.target.closest("a")) return;
       this.onSelect(r);

@@ -2,8 +2,9 @@
    (see site.js). Page layouts live with each page. */
 /* NEAR brand, from defuse-near's theme: Figtree, neutral grays, and the
    #00EC97 green scale. Green carries meaning; everything else stays gray.
-   Flow colors: request = neutral, peer shares = deep green, delivered
-   signature = brand green. */
+   Each signature in flight on the map plays in one of the --round-N hues,
+   none of them green, so parallel rounds stay apart; settled signatures
+   return to brand green. */
 :root {
   color-scheme: dark;
   --ground: #171717;          /* gray-900 */
@@ -16,9 +17,11 @@
   --accent: #00ec97;          /* green-500, the brand color */
   --accent-ink: #00ec97;      /* green text that passes contrast on this ground */
   --on-accent: #000000;
-  --request: #d4d4d4;         /* gray-300 */
-  --share: #009660;           /* green-700 */
-  --response: #00ec97;        /* green-500 */
+  --round-1: #38bdf8;         /* sky-400 */
+  --round-2: #c084fc;         /* purple-400 */
+  --round-3: #fbbf24;         /* amber-400 */
+  --round-4: #f472b6;         /* pink-400 */
+  --round-5: #fb923c;         /* orange-400 */
   --warning: #fac800;         /* yellow-400 */
   --danger: #ff6467;          /* red-400 */
   --map-ground: #0a0a0a;      /* gray-950 */
@@ -52,9 +55,11 @@
     --accent: #00ec97;
     --accent-ink: #06754e;      /* green-800 */
     --on-accent: #000000;
-    --request: #525252;         /* gray-600 */
-    --share: #00c076;           /* green-600 */
-    --response: #009660;        /* green-700 */
+    --round-1: #0284c7;         /* sky-600 */
+    --round-2: #9333ea;         /* purple-600 */
+    --round-3: #d97706;         /* amber-600 */
+    --round-4: #db2777;         /* pink-600 */
+    --round-5: #ea580c;         /* orange-600 */
     --warning: #a65f00;         /* yellow-700 */
     --danger: #e7000b;          /* red-600 */
     --map-ground: #fafafa;
@@ -77,9 +82,11 @@
   --accent: #00ec97;
   --accent-ink: #06754e;
   --on-accent: #000000;
-  --request: #525252;
-  --share: #00c076;
-  --response: #009660;
+  --round-1: #0284c7;
+  --round-2: #9333ea;
+  --round-3: #d97706;
+  --round-4: #db2777;
+  --round-5: #ea580c;
   --warning: #a65f00;
   --danger: #e7000b;
   --map-ground: #fafafa;
