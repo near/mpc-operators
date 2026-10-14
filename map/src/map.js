@@ -8,12 +8,15 @@
 //   │ svg.nodes     markers, labels, hover  │  DOM, so it stays crisp + focusable
 //   └───────────────────────────────────────┘
 //
-// One signing round, as animated (times in ms from the start):
+// One signing round, as animated (times in ms from the start). Every round
+// in flight plays in its own color from the --round-N palette, so parallel
+// signatures stay apart, and its leader wears a ring and a "leader" tag from
+// start to finish.
 //
-//   0     request lands on v1.signer          hub ring (request color)
+//   0     request lands on v1.signer          hub ring
 //   150   every node sees it on-chain         faint hub → node ticks
-//   900   peers send shares to the leader     peer → leader particles (share color)
-//   2300  leader submits respond()            leader → hub particle (response color)
+//   900   peers send shares to the leader     peer → leader particles
+//   2300  leader submits respond()            leader → hub particle, thicker
 //   3000  signature returned to the caller    hub flash + destination label
 
 import { geoGraticule10, geoNaturalEarth1, geoPath } from "https://cdn.jsdelivr.net/npm/d3-geo@3.1.1/+esm";
@@ -24,6 +27,8 @@ const WORLD_URL = "https://cdn.jsdelivr.net/npm/world-atlas@2.0.2/countries-110m
 const SVG_NS = "http://www.w3.org/2000/svg";
 const ROUND_MS = 3600;
 const MARKER_SPACING_PX = 17;
+/** Size of the --round-N palette in site.css. */
+const ROUND_COLORS = 5;
 
 /**
  * @typedef {{
@@ -41,7 +46,8 @@ const MARKER_SPACING_PX = 17;
  *   peers: string[],
  *   caption: string,
  *   startedAt: number,
- * }} Round
+ *   color: number,
+ * }} Round palette index in `color`; no two rounds in flight share one
  * @typedef {{ x: number, y: number }} Point
  */
 
@@ -91,6 +97,11 @@ export class NetworkMap {
   #onHover = () => {};
   /** @type {string | null} */
   #highlighted = null;
+  /** The --round-N colors, read from CSS. @type {string[]} */
+  #palette = [];
+  /** @type {(live: Map<string, number>) => void} */
+  #onRounds = () => {};
+  #liveKey = "";
 
   /** @param {HTMLElement} container */
   constructor(container) {
@@ -141,14 +152,40 @@ export class NetworkMap {
   }
 
   /**
-   * Starts one signing round. Rounds overlap freely.
-   * @param {Omit<Round, "startedAt">} round
+   * Starts one signing round. Rounds overlap freely; each gets a color no
+   * other round in flight is using, and a replay keeps its color.
+   * @param {Omit<Round, "startedAt" | "color">} round
    */
   play(round) {
     if (!this.#byAccount.has(round.leader)) return;
-    this.#rounds.push({ ...round, startedAt: performance.now() });
+    const color = this.#rounds.find((r) => r.id === round.id)?.color ?? this.#freeColor();
+    this.#rounds.push({ ...round, startedAt: performance.now(), color });
     if (this.#rounds.length > 12) this.#rounds.shift();
+    this.#syncRounds();
     if (this.#frame === 0) this.#frame = requestAnimationFrame((t) => this.#draw(t));
+  }
+
+  /**
+   * Called with round id → palette index whenever the set in flight changes.
+   * @param {(live: Map<string, number>) => void} handler
+   */
+  onRounds(handler) {
+    this.#onRounds = handler;
+  }
+
+  /** Lowest palette index no round in flight uses; if all are taken, the oldest round's, since it ends first. */
+  #freeColor() {
+    const used = new Set(this.#rounds.map((r) => r.color));
+    for (let i = 0; i < ROUND_COLORS; i++) if (!used.has(i)) return i;
+    return this.#rounds[0]?.color ?? 0;
+  }
+
+  #syncRounds() {
+    const live = new Map(this.#rounds.map((r) => [r.id, r.color]));
+    const key = [...live].join(";");
+    if (key === this.#liveKey) return;
+    this.#liveKey = key;
+    this.#onRounds(live);
   }
 
   /** @param {string | null} account */
@@ -161,9 +198,10 @@ export class NetworkMap {
 
   #readColors() {
     const style = getComputedStyle(this.container);
-    for (const name of ["land", "border", "grid", "mesh", "request", "share", "response", "ink"]) {
+    for (const name of ["ground", "land", "border", "grid", "mesh", "ink"]) {
       this.#colors[name] = style.getPropertyValue(`--map-${name}`).trim() || "#888";
     }
+    this.#palette = Array.from({ length: ROUND_COLORS }, (_, i) => style.getPropertyValue(`--round-${i + 1}`).trim() || this.#colors.ink);
   }
 
   #projection() {
@@ -325,9 +363,14 @@ export class NetworkMap {
     ctx.setTransform(this.#dpr, 0, 0, this.#dpr, 0, 0);
     ctx.clearRect(0, 0, this.#width, this.#height);
     this.#rounds = this.#rounds.filter((r) => now - r.startedAt < ROUND_MS);
+    this.#syncRounds();
+    /** @type {Map<string, number>} rounds already drawn on each leader this frame */
+    const leading = new Map();
     for (const round of this.#rounds) {
-      if (this.#reducedMotion.matches) this.#drawRoundStill(ctx, round, now - round.startedAt);
-      else this.#drawRound(ctx, round, now - round.startedAt);
+      const rank = leading.get(round.leader) ?? 0;
+      leading.set(round.leader, rank + 1);
+      if (this.#reducedMotion.matches) this.#drawRoundStill(ctx, round, now - round.startedAt, rank);
+      else this.#drawRound(ctx, round, now - round.startedAt, rank);
     }
     this.#frame = this.#rounds.length > 0 ? requestAnimationFrame((t) => this.#draw(t)) : 0;
   }
@@ -386,24 +429,28 @@ export class NetworkMap {
    * @param {CanvasRenderingContext2D} ctx
    * @param {Round} round
    * @param {number} t ms since start
+   * @param {number} rank how many earlier rounds in flight share this leader
    */
-  #drawRound(ctx, round, t) {
+  #drawRound(ctx, round, t, rank) {
     const leader = this.#byAccount.get(round.leader);
     if (!leader) return;
-    const c = this.#colors;
+    const color = this.#palette[round.color] ?? this.#colors.ink;
     const hub = this.#hub;
+
+    // The leader is marked for the whole round, so the shares visibly converge on it.
+    this.#leaderTag(ctx, leader, color, Math.min(t / 150, (ROUND_MS - t) / 400), rank);
 
     // Request lands on the contract.
     if (t < 900) {
       const p = t / 900;
-      this.#ring(ctx, hub, 14 + 26 * p, c.request, 1 - p, 2);
+      this.#ring(ctx, hub, 14 + 26 * p, color, 1 - p, 2);
     }
 
     // Every node observes the block.
     if (t > 150 && t < 1100) {
       const p = clamp01((t - 150) / 700);
       for (const node of this.#nodes) {
-        this.#comet(ctx, curve(hub, node, 0.08), easeInOut(p), c.request, 1.2, 0.3, 0.45 * (1 - clamp01((t - 850) / 250)));
+        this.#comet(ctx, curve(hub, node, 0.08), easeInOut(p), color, 1.2, 0.3, 0.45 * (1 - clamp01((t - 850) / 250)));
       }
     }
 
@@ -417,7 +464,7 @@ export class NetworkMap {
         if (p <= 0 || p >= 1) return;
         const path = curve(peer, leader, 0.18);
         ctx.globalAlpha = 0.25 * Math.sin(Math.PI * p);
-        ctx.strokeStyle = c.share;
+        ctx.strokeStyle = color;
         ctx.lineWidth = 1;
         ctx.beginPath();
         for (let s = 0; s <= 20; s++) {
@@ -427,25 +474,23 @@ export class NetworkMap {
         }
         ctx.stroke();
         ctx.globalAlpha = 1;
-        this.#comet(ctx, path, easeInOut(p), c.share, 2.2, 0.25);
-        if (p < 0.3) this.#ring(ctx, peer, 8 + 10 * (p / 0.3), c.share, 1 - p / 0.3, 1.2);
+        this.#comet(ctx, path, easeInOut(p), color, 2.2, 0.25);
+        if (p < 0.3) this.#ring(ctx, peer, 8 + 10 * (p / 0.3), color, 1 - p / 0.3, 1.2);
       });
-      const pulse = clamp01((t - 1500) / 800);
-      this.#ring(ctx, leader, 12 + 4 * Math.sin(t / 90), c.response, 0.5 + 0.5 * pulse, 2);
     }
 
     // Leader submits respond().
     if (t > 2300 && t < 3100) {
       const p = clamp01((t - 2300) / 700);
-      this.#comet(ctx, curve(leader, hub, -0.15), easeInOut(p), c.response, 3.2, 0.35);
+      this.#comet(ctx, curve(leader, hub, -0.15), easeInOut(p), color, 3.2, 0.35);
     }
 
     // Signature is back on-chain; caption floats up from the contract.
     if (t > 2950) {
       const p = clamp01((t - 2950) / 650);
-      this.#ring(ctx, hub, 16 + 34 * p, c.response, 1 - p, 2.5);
+      this.#ring(ctx, hub, 16 + 34 * p, color, 1 - p, 2.5);
       ctx.globalAlpha = 1 - p;
-      ctx.fillStyle = c.ink;
+      ctx.fillStyle = color;
       ctx.font = "600 12px 'IBM Plex Mono', ui-monospace, monospace";
       ctx.textAlign = "center";
       ctx.fillText(round.caption, hub.x, hub.y - 24 - 18 * p);
@@ -454,20 +499,55 @@ export class NetworkMap {
   }
 
   /**
+   * Ring and "leader" tag on the node running the round, in the round's
+   * color. A node leading several rounds at once gets them stacked outward.
+   * @param {CanvasRenderingContext2D} ctx
+   * @param {Point} at
+   * @param {string} color
+   * @param {number} alpha
+   * @param {number} rank
+   */
+  #leaderTag(ctx, at, color, alpha, rank) {
+    alpha = clamp01(alpha);
+    if (alpha === 0) return;
+    this.#ring(ctx, at, 11 + 4 * rank, color, alpha, 2.5);
+    const label = "leader";
+    ctx.font = "600 10px 'IBM Plex Mono', ui-monospace, monospace";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    const w = ctx.measureText(label).width + 10;
+    const y = at.y - 24 - 18 * rank;
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = this.#colors.ground;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.roundRect(at.x - w / 2, y - 8, w, 16, 4);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = color;
+    ctx.fillText(label, at.x, y + 0.5);
+    ctx.textBaseline = "alphabetic";
+    ctx.globalAlpha = 1;
+  }
+
+  /**
    * Reduced motion: no travel, just who took part, held briefly.
    * @param {CanvasRenderingContext2D} ctx
    * @param {Round} round
    * @param {number} t
+   * @param {number} rank
    */
-  #drawRoundStill(ctx, round, t) {
+  #drawRoundStill(ctx, round, t, rank) {
     const leader = this.#byAccount.get(round.leader);
     if (!leader) return;
+    const color = this.#palette[round.color] ?? this.#colors.ink;
     const alpha = t < ROUND_MS - 600 ? 1 : (ROUND_MS - t) / 600;
     for (const account of round.peers) {
       const peer = this.#byAccount.get(account);
-      if (peer) this.#ring(ctx, peer, 9, this.#colors.share, alpha, 1.2);
+      if (peer) this.#ring(ctx, peer, 9, color, alpha, 1.2);
     }
-    this.#ring(ctx, leader, 13, this.#colors.response, alpha, 2.5);
-    this.#ring(ctx, this.#hub, 18, this.#colors.response, alpha, 2);
+    this.#leaderTag(ctx, leader, color, alpha, rank);
+    this.#ring(ctx, this.#hub, 18, color, alpha, 2);
   }
 }

@@ -197,6 +197,12 @@ body > .site-nav {
 .pill-signed { color: var(--accent-ink); background: color-mix(in srgb, var(--accent) 14%, transparent); }
 .pill-failed { color: var(--danger); background: color-mix(in srgb, var(--danger) 14%, transparent); }
 
+/* Rows whose signature is playing on the map borrow its round color, and
+   settle back to green when the animation ends. */
+.log-row.is-live { box-shadow: inset 3px 0 0 var(--round); }
+.log-row.is-live .pill-signed, .log-row.is-live .node-name { color: var(--round); }
+.log-row.is-live .pill-signed { background: color-mix(in srgb, var(--round) 18%, transparent); }
+
 .log-empty { padding: 16px 10px; color: var(--ink-faint); }
 
 /* ── Stage: map, legend, roster ──────────────────────────────────────── */
@@ -217,9 +223,6 @@ body > .site-nav {
   border: 1px solid var(--line);
   background: var(--map-ground);
   overflow: hidden;
-  --map-request: var(--request);
-  --map-share: var(--share);
-  --map-response: var(--response);
   --map-ink: var(--ink);
 }
 .map > * { position: absolute; inset: 0; inline-size: 100%; block-size: 100%; }
@@ -256,16 +259,15 @@ body > .site-nav {
 }
 .legend li { display: block; }
 .legend em { color: var(--ink-faint); font-style: normal; }
-.swatch, .swatch-node { display: inline-block; vertical-align: middle; margin-inline-end: 7px; }
+.swatch, .swatch-node, .swatch-leader { display: inline-block; vertical-align: middle; margin-inline-end: 7px; }
 .swatch { inline-size: 18px; block-size: 3px; border-radius: 2px; }
-.swatch-request { background: var(--request); }
-.swatch-share { background: var(--share); }
-.swatch-response { background: var(--response); }
-.swatch-node {
+.swatch-rounds { background: linear-gradient(90deg, var(--round-1), var(--round-2), var(--round-3), var(--round-4), var(--round-5)); }
+.swatch-node, .swatch-leader {
   inline-size: 10px; block-size: 10px; border-radius: 50%;
   background: var(--ink-soft);
   box-shadow: 0 0 0 2px var(--map-ground), 0 0 0 3px var(--accent);
 }
+.swatch-leader { box-shadow: 0 0 0 2px var(--map-ground), 0 0 0 4px var(--round-1); }
 
 .roster-wrap {
   flex: 0 0 auto;
