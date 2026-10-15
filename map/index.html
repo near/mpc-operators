@@ -2,76 +2,12 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>NEAR MPC Signing Map</title>
-  <meta name="description" content="Live map of NEAR Protocol MPC nodes signing chain signatures on v1.signer.">
-  <link rel="icon" type="image/svg+xml" href="../favicon.svg">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
-  <link rel="stylesheet" href="../site.css">
-  <link rel="stylesheet" href="styles.css">
+  <!-- The map is the site's front page now (../index.html); this keeps old /map/ links working. -->
+  <meta http-equiv="refresh" content="0; url=../">
+  <link rel="canonical" href="https://mpc.nearone.org/">
 </head>
 <body>
-  <nav class="site-nav" aria-label="Site">
-    <a class="site-brand" href="https://nearone.org"><img src="../near-one-logo.svg" alt="Near One" width="80" height="28"></a>
-    <ul>
-      <li><a href="../">Operators</a></li>
-      <li><a href="../overview.html">Security</a></li>
-      <li><a href="./" aria-current="page">Live map <span class="site-tag">mainnet</span></a></li>
-    </ul>
-    <button id="api-keys" class="button" type="button">API keys</button>
-  </nav>
-  <header class="bar">
-    <div class="brand">
-      <h1>NEAR MPC Signing Map <span class="site-tag">Mainnet only</span></h1>
-      <p>Chain signatures on <code>v1.signer</code>, live from mainnet</p>
-    </div>
-    <dl id="stats" class="stats"></dl>
-    <div class="bar-end">
-      <ul id="sources" class="sources" aria-label="Data sources"></ul>
-    </div>
-  </header>
-  <p id="notice" class="notice" role="status" hidden></p>
-
-  <main class="console">
-    <section class="panel panel-requests" aria-labelledby="requests-title">
-      <header class="panel-head">
-        <h2 id="requests-title">Requests</h2>
-        <span id="request-count" class="count">0</span>
-      </header>
-      <p class="panel-sub">Contracts and accounts asking the network to sign</p>
-      <ol id="request-log" class="log"></ol>
-    </section>
-
-    <section class="stage" aria-label="Network map">
-      <div id="map" class="map" role="img" aria-label="World map of MPC nodes with animated signing rounds"></div>
-      <ul class="legend">
-        <li><span class="swatch swatch-rounds"></span>One color per signature in flight; its rows in the panels match until the round ends</li>
-        <li><span class="swatch-leader"></span>Ringed and tagged: the leader, which gathers the peers' shares and submits <code>respond()</code> <em>(peer set illustrative)</em></li>
-        <li><span class="swatch-node"></span>Ring: node runs in Intel TDX</li>
-        <li>Scroll or pinch to zoom, drag to pan</li>
-      </ul>
-      <section class="roster-wrap" aria-labelledby="roster-title">
-        <header class="panel-head">
-          <h2 id="roster-title">Nodes</h2>
-          <span class="panel-sub">Sorted by signatures delivered</span>
-        </header>
-        <ul id="roster" class="roster"></ul>
-      </section>
-    </section>
-
-    <section class="panel panel-delivered" aria-labelledby="delivered-title">
-      <header class="panel-head">
-        <h2 id="delivered-title">Delivered</h2>
-        <span id="delivered-count" class="count">0</span>
-      </header>
-      <p class="panel-sub">The node that assembled each signature and posted it</p>
-      <ol id="delivered-log" class="log"></ol>
-    </section>
-  </main>
-
-
-  <script type="module" src="src/main.js"></script>
+  <p>The live map moved to the front page: <a href="../">mpc.nearone.org</a>.</p>
 </body>
 </html>

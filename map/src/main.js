@@ -134,7 +134,8 @@ feed.addEventListener("network", () => {
   renderActivity();
 });
 
-fetch("data/node-locations.json")
+// Resolved against this module, not the page: the page lives at the site root.
+fetch(new URL("../data/node-locations.json", import.meta.url))
   .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
   .then((raw) => {
     knownLocations = parseNodeLocations(raw).nodes;
