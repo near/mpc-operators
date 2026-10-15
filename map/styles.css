@@ -94,9 +94,9 @@ body > .site-nav {
   flex: 1 1 auto;
   min-height: 0;
   display: grid;
-  /* The Nodes column keeps more room than Signatures: its rows have four
-     cells, while a signature row's account names carry tooltips. */
-  grid-template-columns: minmax(240px, 280px) minmax(0, 1fr) minmax(260px, 310px);
+  /* Both side columns stay narrow: each row keeps the essentials and drops
+     the rest down on click. */
+  grid-template-columns: minmax(240px, 280px) minmax(0, 1fr) minmax(220px, 250px);
   gap: 12px;
 }
 
@@ -133,7 +133,7 @@ body > .site-nav {
 }
 
 /* One row per signature: requester → node on the first line, what was asked
-   on the second, timing and the transactions on the third. */
+   and how long it took on the second; the rest drops down on click. */
 .log-row {
   display: grid;
   gap: 3px;
@@ -144,17 +144,18 @@ body > .site-nav {
 }
 .log-row:first-child { border-top-color: transparent; }
 .log-row:hover, .log-row.is-node-highlighted { background: var(--surface-raised); }
-.log-row.is-selected { background: color-mix(in srgb, var(--accent) 12%, var(--surface-raised)); }
+.log-row.is-open { background: var(--surface-raised); }
 .log-row.is-fresh { animation: arrive 1.6s ease-out; }
 .log-row.is-fresh-response { animation-name: arrive-response; }
 
-.row-top, .row-mid, .row-bottom {
+.row-top, .row-mid {
   display: flex;
   align-items: baseline;
   gap: 8px;
   min-width: 0;
 }
 .row-top { gap: 6px; }
+.row-top .chevron { margin-inline-start: 2px; }
 /* Requester and node share the line equally; longer names don't get squeezed first. */
 .row-top .who { flex: 1 1 0; }
 .who {
@@ -169,8 +170,10 @@ body > .site-nav {
 .arrow { color: var(--ink-faint); }
 .node-name { color: var(--accent-ink); }
 .ago { margin-inline-start: auto; color: var(--ink-faint); font-family: var(--font-data); font-size: var(--step--1); font-variant-numeric: tabular-nums; flex: none; }
-.row-mid { flex-wrap: wrap; color: var(--ink-soft); font-size: var(--step--1); }
-.path { font-family: var(--font-data); color: var(--ink-faint); overflow-wrap: anywhere; }
+.row-mid { color: var(--ink-soft); font-size: var(--step--1); }
+/* The path gives way first so the line never wraps; its full value is the tooltip. */
+.path { font-family: var(--font-data); color: var(--ink-faint); flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.row-mid > :not(.path) { flex: none; }
 .chain {
   font-weight: 600;
   color: var(--ink);
@@ -178,11 +181,8 @@ body > .site-nav {
   border-radius: 3px;
   padding: 0 5px;
 }
-.row-bottom { flex-wrap: wrap; font-size: var(--step--1); color: var(--ink-faint); }
-.latency { font-family: var(--font-data); color: var(--ink); font-variant-numeric: tabular-nums; }
-.hash { font-family: var(--font-data); color: var(--ink-faint); text-decoration: none; flex: none; }
-.hash:hover { color: var(--ink); text-decoration: underline; }
-.row-bottom .hash:first-of-type { margin-inline-start: auto; }
+.latency { margin-inline-start: auto; font-family: var(--font-data); color: var(--ink); font-variant-numeric: tabular-nums; }
+.log-detail { margin-top: 3px; padding-top: 6px; border-top: 1px solid var(--line); cursor: default; }
 
 .pill {
   font-size: 0.6875rem;
@@ -204,7 +204,7 @@ body > .site-nav {
 /* A failed request reads red at a glance: edge, tint and pill. It outranks
    the round color on the edge, after .is-live above. */
 .log-row.is-failed { box-shadow: inset 3px 0 0 var(--danger); background: color-mix(in srgb, var(--danger) 7%, transparent); }
-.log-row.is-failed:hover, .log-row.is-failed.is-node-highlighted, .log-row.is-failed.is-selected { background: color-mix(in srgb, var(--danger) 14%, var(--surface-raised)); }
+.log-row.is-failed:hover, .log-row.is-failed.is-node-highlighted, .log-row.is-failed.is-open { background: color-mix(in srgb, var(--danger) 14%, var(--surface-raised)); }
 .log-row.is-failed .ago { color: var(--danger); }
 
 .log-empty { padding: 16px 10px; color: var(--ink-faint); }
@@ -331,27 +331,46 @@ body > .site-nav {
   min-height: 0;
   scrollbar-width: thin;
 }
-/* Name, place, TEE and count on one line; the bar underneath is the count
-   against the busiest node. */
+/* Name, flag, TEE and count on one line; the bar underneath is the count
+   against the busiest node. Clicking a row drops its details down. */
+.roster-item { list-style: none; }
 .roster-row {
   display: grid;
-  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) auto 2.2em;
+  grid-template-columns: minmax(0, 1fr) auto auto 2.2em 0.7em;
   align-items: center;
   column-gap: 8px;
   row-gap: 4px;
   padding: 5px 6px 6px;
   border-radius: 4px;
   font-size: var(--step--1);
+  cursor: pointer;
 }
+.roster-row.is-open { background: var(--surface-raised); border-radius: 4px 4px 0 0; }
+.chevron { color: var(--ink-faint); justify-self: end; transition: transform 0.15s; }
+.is-open .chevron { transform: rotate(90deg); }
 .roster-row:hover, .roster-row.is-node-highlighted { background: var(--surface-raised); }
 .roster-name { font-family: var(--font-data); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .roster-row.is-node-highlighted .roster-name { color: var(--accent-ink); }
-.roster-place { color: var(--ink-soft); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tee { font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-faint); }
 .tee-tdx { color: var(--accent-ink); }
 .roster-count { font-family: var(--font-data); text-align: end; font-variant-numeric: tabular-nums; }
 .roster-bar { grid-column: 1 / -1; block-size: 2px; background: var(--line); border-radius: 1px; overflow: hidden; }
 .roster-bar > span { display: block; block-size: 100%; background: var(--accent); }
+
+.roster-detail {
+  margin: 0 0 4px;
+  padding: 8px 8px 10px;
+  background: color-mix(in srgb, var(--surface-raised) 55%, transparent);
+  border-radius: 0 0 4px 4px;
+  font-size: var(--step--1);
+}
+.facts { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 10px; margin: 0; }
+.facts dt { color: var(--ink-faint); font-size: 0.6875rem; letter-spacing: 0.06em; text-transform: uppercase; padding-top: 2px; }
+.facts dd { margin: 0; color: var(--ink-soft); overflow-wrap: anywhere; }
+.facts code { overflow-wrap: anywhere; }
+.facts a { color: var(--accent-ink); text-decoration: none; }
+.facts a:hover { text-decoration: underline; }
+.facts .ago { margin: 0; font-size: inherit; color: inherit; }
 
 /* ── Motion ──────────────────────────────────────────────────────────── */
 

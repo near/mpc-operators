@@ -70,3 +70,5 @@ export function chainInfo(chain) {
 
 /** @param {string} hash */
 export const nearTxUrl = (hash) => `https://nearblocks.io/txns/${hash}`;
+/** @param {string} account */
+export const nearAccountUrl = (account) => `https://nearblocks.io/address/${account}`;

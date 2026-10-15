@@ -46,6 +46,15 @@ function link(href, text, className, title) {
 }
 
 /**
+ * A label and its value in a dropdown's facts list.
+ * @param {string} label
+ * @param {(Node | string | null | false)[]} value
+ */
+function field(label, ...value) {
+  return [h("dt", {}, label), h("dd", {}, ...value)];
+}
+
+/**
  * What a request asked for, in words.
  * @param {SignRequest} r
  * @param {SignerState | null} network
@@ -69,6 +78,33 @@ function shortKind(kind) {
 /** @param {SignRequest} r */
 export function latencyMs(r) {
   return r.response ? Math.max(0, r.response.timestampMs - r.timestampMs) : null;
+}
+
+/**
+ * @typedef {{ count: number, latencies: number[], lastMs: number }} NodeStats
+ * What each node delivered in the tracked window.
+ * @param {SignRequest[]} requests
+ * @returns {Map<string, NodeStats>}
+ */
+function nodeStats(requests) {
+  /** @type {Map<string, NodeStats>} */
+  const byNode = new Map();
+  for (const r of requests) {
+    if (!r.response) continue;
+    const s = byNode.get(r.response.node) ?? { count: 0, latencies: [], lastMs: 0 };
+    s.count += 1;
+    const latency = latencyMs(r);
+    if (latency !== null) s.latencies.push(latency);
+    s.lastMs = Math.max(s.lastMs, r.response.timestampMs);
+    byNode.set(r.response.node, s);
+  }
+  for (const s of byNode.values()) s.latencies.sort((a, b) => a - b);
+  return byNode;
+}
+
+/** @param {number[]} sorted */
+function median(sorted) {
+  return sorted.length > 0 ? sorted[Math.floor(sorted.length / 2)] : null;
 }
 
 /**
@@ -104,10 +140,14 @@ export class Panels {
   #fresh = new Set();
   /** Receipt ids whose response just landed. @type {Set<string>} */
   #freshResponse = new Set();
-  /** @type {string | null} */
+  /** The signature whose dropdown is open, if any. @type {string | null} */
   #selected = null;
+  /** The last renderLogs arguments, re-rendered when a dropdown toggles. @type {{ requests: SignRequest[], network: SignerState | null, locations: Map<string, GeoLocation | null> } | null} */
+  #logArgs = null;
   /** Rounds playing on the map: receipt id → palette index. @type {Map<string, number>} */
   #live = new Map();
+  /** The node whose details are open in the roster, if any. @type {string | null} */
+  #openNode = null;
 
   /** @param {Document} doc */
   constructor(doc) {
@@ -133,14 +173,6 @@ export class Panels {
   markFresh(added, resolved) {
     for (const id of added) this.#fresh.add(id);
     for (const id of resolved) this.#freshResponse.add(id);
-  }
-
-  /** @param {string | null} receiptId */
-  select(receiptId) {
-    this.#selected = receiptId;
-    for (const row of document.querySelectorAll(".log-row")) {
-      row.classList.toggle("is-selected", row.getAttribute("data-receipt") === receiptId);
-    }
   }
 
   /**
@@ -172,6 +204,7 @@ export class Panels {
    * @param {Map<string, GeoLocation | null>} locations by account
    */
   renderLogs(requests, network, locations) {
+    this.#logArgs = { requests, network, locations };
     const now = Date.now();
     const rows = requests.slice(0, LOG_ROWS).map((r) => this.#signatureRow(r, network, locations, now));
     this.signatureList.replaceChildren(...rows);
@@ -182,11 +215,10 @@ export class Panels {
 
   /**
    * One row per signature: the requester and, once it has answered, the node
-   * with its country; then what was asked; then timing and the transactions.
-   * A pending request shows "Signing…" where the node will go, and a request
-   * whose respond tx was never seen keeps a "Signed" pill there. A failed
-   * request (its callback failed, with or without a node's response) is
-   * marked red and carries a "Failed" pill either way.
+   * with its country; then what was asked and how long it took. A pending
+   * request shows "Signing…" where the node will go, a request whose respond
+   * tx was never seen keeps a "Signed" pill there, and a failed request is
+   * marked red. Clicking a row drops its details down.
    * @param {SignRequest} r
    * @param {SignerState | null} network
    * @param {Map<string, GeoLocation | null>} locations
@@ -194,39 +226,35 @@ export class Panels {
    */
   #signatureRow(r, network, locations, now) {
     const response = r.response;
-    const dest = r.destination;
-    const chain = dest ? fmt.chainInfo(dest.chain) : null;
-    const destTx = dest && chain ? chain.tx(dest.txn) : null;
+    const chain = r.destination ? fmt.chainInfo(r.destination.chain) : null;
     const latency = latencyMs(r);
     const where = response ? locations.get(response.node) : undefined;
     const kind = requestKind(r, network);
+    const open = this.#selected === r.receiptId;
     const classes = ["log-row"];
     if (r.status === "failed") classes.push("is-failed");
     if (this.#fresh.has(r.receiptId)) classes.push("is-fresh");
     if (this.#freshResponse.has(r.receiptId)) classes.push("is-fresh", "is-fresh-response");
-    if (this.#selected === r.receiptId) classes.push("is-selected");
+    if (open) classes.push("is-open");
     const row = h(
       "li",
-      { class: classes.join(" "), "data-receipt": r.receiptId, "data-node": response?.node, tabindex: "0" },
+      { class: classes.join(" "), "data-receipt": r.receiptId, "data-node": response?.node, tabindex: "0", "aria-expanded": open ? "true" : "false" },
       h("div", { class: "row-top" },
         h("span", { class: "who", title: r.requester }, fmt.account(r.requester)),
         h("span", { class: "arrow", "aria-hidden": "true" }, "→"),
         response ? h("span", { class: "who node-name", title: response.node }, fmt.account(response.node)) : statusPill(r.status),
         where ? h("span", { class: "flag", title: `${where.city}, ${where.country}` }, flag(where.countryCode)) : null,
         h("time", { class: "ago", "data-ts": String(r.timestampMs), datetime: new Date(r.timestampMs).toISOString() }, fmt.ago(r.timestampMs, now)),
+        h("span", { class: "chevron", "aria-hidden": "true" }, "›"),
       ),
       h("div", { class: "row-mid" },
         h("span", { class: "kind", title: kind }, shortKind(kind)),
-        r.path ? h("span", { class: "path", title: `Derivation path: ${r.path}` }, fmt.middle(r.path, 10)) : null,
+        r.path ? h("span", { class: "path", title: `Derivation path: ${r.path}` }, fmt.middle(r.path, 8)) : null,
         chain ? h("span", { class: "chain" }, chain.name) : null,
-      ),
-      h("div", { class: "row-bottom" },
         r.status === "failed" && response ? statusPill("failed") : null,
         latency !== null ? h("span", { class: "latency", title: "Request block to response block" }, fmt.seconds(latency)) : null,
-        link(fmt.nearTxUrl(r.txHash), "request ↗", "hash", `Request tx ${r.txHash}`),
-        response ? link(fmt.nearTxUrl(response.txHash), "respond ↗", "hash", `Respond tx ${response.txHash}`) : null,
-        dest && destTx && chain ? link(destTx, `${chain.name} ↗`, "hash", `${chain.name} tx ${dest.txn}`) : null,
       ),
+      open ? h("div", { class: "log-detail" }, this.#signatureFacts(r, kind, locations)) : null,
     );
     this.#wireRow(row, r);
     if (response) {
@@ -237,22 +265,80 @@ export class Panels {
   }
 
   /**
+   * The dropdown under a signature: both transactions with their exact times,
+   * the full accounts, the path and the destination.
+   * @param {SignRequest} r
+   * @param {string} kind
+   * @param {Map<string, GeoLocation | null>} locations
+   */
+  #signatureFacts(r, kind, locations) {
+    const response = r.response;
+    const dest = r.destination;
+    const chain = dest ? fmt.chainInfo(dest.chain) : null;
+    const where = response ? locations.get(response.node) : undefined;
+    const latency = latencyMs(r);
+    const when = (/** @type {number} */ ms) => new Date(ms).toLocaleString();
+    const status = {
+      pending: "Signing, waiting for a node to respond",
+      signed: response ? "Signed" : "Signed; the respond tx was not seen in the feed",
+      failed: "Failed: the requester's callback failed",
+    }[r.status];
+    return h("dl", { class: "facts" },
+      ...field("Status", status),
+      ...field("Requester", link(fmt.nearAccountUrl(r.requester), r.requester)),
+      ...(r.txSigner !== r.requester ? field("Sent by", link(fmt.nearAccountUrl(r.txSigner), r.txSigner)) : []),
+      ...field("Request", link(fmt.nearTxUrl(r.txHash), fmt.middle(r.txHash, 8), undefined, r.txHash), ` · ${when(r.timestampMs)} · block ${r.blockHeight}`),
+      ...field("Key", kind),
+      ...(r.method !== "sign" ? field("Method", h("code", {}, r.method)) : []),
+      ...(r.path ? field("Path", h("code", {}, r.path)) : []),
+      ...(response ? field("Node", link(fmt.nearAccountUrl(response.node), response.node), where ? ` · ${where.city}, ${where.country}` : "") : []),
+      ...(response
+        ? field("Respond", link(fmt.nearTxUrl(response.txHash), fmt.middle(response.txHash, 8), undefined, response.txHash), ` · ${when(response.timestampMs)}`, latency !== null ? ` · ${fmt.seconds(latency)} after the request` : "")
+        : []),
+      ...(dest && chain
+        ? field("Destination", `${chain.name} · `, h("span", { title: dest.address }, fmt.middle(dest.address, 8)), " · ", link(chain.tx(dest.txn), "tx ↗", undefined, dest.txn))
+        : []),
+    );
+  }
+
+  /**
    * @param {HTMLElement} row
    * @param {SignRequest} r
    */
   #wireRow(row, r) {
     this.#applyLive(row, r.receiptId);
     const choose = (/** @type {Event} */ e) => {
-      if (e.target instanceof HTMLElement && e.target.closest("a")) return;
-      this.onSelect(r);
+      if (e.target instanceof HTMLElement && e.target.closest("a, .log-detail")) return;
+      if (this.toggleSignature(r.receiptId)) this.onSelect(r);
     };
     row.addEventListener("click", choose);
     row.addEventListener("keydown", (e) => {
+      if (e.target !== row) return; // a link inside the dropdown keeps its own Enter
       if (e.key === "Enter" || e.key === " ") {
         e.preventDefault();
         choose(e);
       }
     });
+  }
+
+  /**
+   * Opens one signature's dropdown and closes any other; the same one again
+   * closes it. The rows re-render, so the choice survives the feed's
+   * refreshes, and focus returns to the row for keyboard users.
+   * @param {string} receiptId
+   * @returns {boolean} whether the dropdown is now open
+   */
+  toggleSignature(receiptId) {
+    const open = this.#selected !== receiptId;
+    this.#selected = open ? receiptId : null;
+    const hadFocus = document.activeElement?.closest(".log-row")?.getAttribute("data-receipt") === receiptId;
+    const args = this.#logArgs;
+    if (args) this.renderLogs(args.requests, args.network, args.locations);
+    if (hadFocus) {
+      const row = this.signatureList.querySelector(`.log-row[data-receipt="${CSS.escape(receiptId)}"]`);
+      if (row instanceof HTMLElement) row.focus();
+    }
+    return open;
   }
 
   #tickAges() {
@@ -267,40 +353,119 @@ export class Panels {
    * @param {SignerState} network
    * @param {Map<string, Attestation>} attestations by TLS key
    * @param {Map<string, GeoLocation | null>} locations by account
-   * @param {Map<string, number>} delivered by account
+   * @param {SignRequest[]} requests the tracked window, for each node's figures
    */
-  renderRoster(network, attestations, locations, delivered) {
-    const max = Math.max(1, ...delivered.values());
+  renderRoster(network, attestations, locations, requests) {
+    const now = Date.now();
+    const stats = nodeStats(requests);
+    const counts = [...stats.values()].map((s) => s.count);
+    const max = Math.max(1, ...counts);
+    const total = counts.reduce((sum, c) => sum + c, 0);
     const rows = [...network.participants]
-      .sort((a, b) => (delivered.get(b.account) ?? 0) - (delivered.get(a.account) ?? 0) || a.account.localeCompare(b.account))
+      .sort((a, b) => (stats.get(b.account)?.count ?? 0) - (stats.get(a.account)?.count ?? 0) || a.account.localeCompare(b.account))
       .map((p) => {
-        const tee = attestations.get(p.tlsPublicKey)?.kind ?? "none";
+        const attestation = attestations.get(p.tlsPublicKey);
+        const tee = attestation?.kind ?? "none";
         const where = locations.get(p.account);
-        const count = delivered.get(p.account) ?? 0;
-        const place = where === undefined ? "Locating…" : where === null ? "Not located yet" : `${flag(where.countryCode)} ${where.city}, ${where.countryCode}`;
-        const teeText = { tdx: "TDX", mock: "No TEE", none: "No attestation" }[tee];
+        const s = stats.get(p.account);
+        const count = s?.count ?? 0;
+        const open = this.#openNode === p.account;
+        const detailId = `node-detail-${p.id}`;
+        const teeText = { tdx: "TDX", mock: "Mock", none: "None" }[tee];
         const teeTitle = {
           tdx: "Intel TDX attestation verified on-chain",
           mock: "Mock attestation: not running in a TEE",
           none: "No attestation on record",
         }[tee];
-        const row = h("li", { class: "roster-row", "data-account": p.account, tabindex: "0" },
+        const row = h("div", {
+          class: `roster-row${open ? " is-open" : ""}`,
+          "data-account": p.account,
+          role: "button",
+          tabindex: "0",
+          "aria-expanded": open ? "true" : "false",
+          "aria-controls": detailId,
+        },
           h("span", { class: "roster-name", title: p.account }, fmt.account(p.account)),
-          h("span", {
-            class: "roster-place",
-            title: where ? `${where.provider} · ${where.ip}` : where === null ? "New operator: run scripts/locate-nodes.mjs to place it on the map" : undefined,
-          }, place),
+          h("span", { class: "flag", title: where ? `${where.city}, ${where.country}` : where === null ? "Not located yet" : "Locating…" }, where ? flag(where.countryCode) : "–"),
           h("span", { class: `tee tee-${tee}`, title: teeTitle }, teeText),
           h("span", { class: "roster-count", title: "Signatures this node delivered in the tracked window" }, String(count)),
+          h("span", { class: "chevron", "aria-hidden": "true" }, "›"),
           h("span", { class: "roster-bar", "aria-hidden": "true" }, h("span", { style: `inline-size:${(count / max) * 100}%` })),
         );
+        const detail = h("div", { class: "roster-detail", id: detailId, hidden: !open }, this.#nodeFacts(p, attestation, where, s, total, now));
         row.addEventListener("pointerenter", () => this.onHoverNode(p.account));
         row.addEventListener("pointerleave", () => this.onHoverNode(null));
         row.addEventListener("focus", () => this.onHoverNode(p.account));
         row.addEventListener("blur", () => this.onHoverNode(null));
-        return row;
+        row.addEventListener("click", () => this.toggleNode(p.account));
+        row.addEventListener("keydown", (e) => {
+          if (e.target !== row) return;
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            this.toggleNode(p.account);
+          }
+        });
+        return h("li", { class: "roster-item" }, row, detail);
       });
     this.roster.replaceChildren(...rows);
+  }
+
+  /**
+   * The dropdown under a node: everything the row only hints at.
+   * @param {import("./lib/contract.js").Participant} p
+   * @param {Attestation | undefined} attestation
+   * @param {GeoLocation | null | undefined} where
+   * @param {NodeStats | undefined} s
+   * @param {number} total signatures delivered by all nodes in the window
+   * @param {number} now
+   */
+  #nodeFacts(p, attestation, where, s, total, now) {
+    const tee = attestation?.kind ?? "none";
+    const teeLine = {
+      tdx: "Intel TDX, attestation verified on-chain",
+      mock: "Mock attestation, not running in a TEE",
+      none: "No attestation on record",
+    }[tee];
+    const expires = attestation?.expiresAtMs ? `, valid until ${new Date(attestation.expiresAtMs).toLocaleDateString()}` : "";
+    const count = s?.count ?? 0;
+    const share = total > 0 ? ` (${Math.round((count / total) * 100)}% of the window)` : "";
+    const med = s ? median(s.latencies) : null;
+    return h("dl", { class: "facts" },
+      ...field("Account", link(fmt.nearAccountUrl(p.account), p.account)),
+      ...field("Node URL", p.url ? link(p.url, p.url) : "—"),
+      ...field("Location", where ? `${where.city}, ${where.country}` : where === null ? "Not in the data file yet" : "Locating…"),
+      ...field("Hosting", where ? `${where.provider} · ${where.ip}` : "—"),
+      ...field("TEE", `${teeLine}${expires}`),
+      ...field("Delivered", `${count} signature${count === 1 ? "" : "s"}${share}`),
+      ...field("Median time", med === null ? "—" : `${fmt.seconds(med)} request → response`),
+      ...field("Last delivered", s ? h("time", { class: "ago", "data-ts": String(s.lastMs), datetime: new Date(s.lastMs).toISOString() }, fmt.ago(s.lastMs, now)) : "—"),
+    );
+  }
+
+  /**
+   * Opens one node's dropdown and closes any other; the same node again
+   * closes it. The choice survives re-renders.
+   * @param {string | null} account
+   */
+  toggleNode(account) {
+    this.#openNode = this.#openNode === account ? null : account;
+    for (const item of this.roster.querySelectorAll(".roster-item")) {
+      const row = item.querySelector(".roster-row");
+      const detail = item.querySelector(".roster-detail");
+      const open = row?.getAttribute("data-account") === this.#openNode;
+      row?.classList.toggle("is-open", open);
+      row?.setAttribute("aria-expanded", String(open));
+      if (detail instanceof HTMLElement) detail.hidden = !open;
+    }
+  }
+
+  /**
+   * Opens a node's dropdown and scrolls it into view (a click on the map).
+   * @param {string} account
+   */
+  openNode(account) {
+    if (this.#openNode !== account) this.toggleNode(account);
+    this.roster.querySelector(`.roster-row[data-account="${CSS.escape(account)}"]`)?.scrollIntoView({ block: "nearest" });
   }
 
   /** @param {string | null} account */
