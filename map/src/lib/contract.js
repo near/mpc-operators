@@ -106,11 +106,14 @@ export function parseSignerState(raw) {
 
 /**
  * `get_attestation` returns null, `{ Dstack: {...} }` for a node running in an
- * Intel TDX enclave, or `{ Mock: ... }` for a node that is not.
+ * Intel TDX enclave, or `{ Mock: ... }` for a node that is not. Newer contracts
+ * (testnet since 2026-10) wrap it: `{ attestation: { Dstack | Mock },
+ * accepted_at_seconds }`.
  * @param {unknown} raw
  * @returns {Attestation}
  */
 export function parseAttestation(raw) {
+  if (isRecord(raw) && isRecord(raw.attestation)) raw = raw.attestation;
   if (!isRecord(raw)) return { kind: "none", expiresAtMs: null, imageHash: null };
   if (isRecord(raw.Dstack)) {
     const d = raw.Dstack;

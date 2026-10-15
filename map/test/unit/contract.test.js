@@ -65,6 +65,14 @@ describe("parseAttestation", () => {
     });
   });
 
+  it("unwraps the newer { attestation, accepted_at_seconds } shape", () => {
+    // Captured from v1.signer-prod.testnet after its 2026-10 upgrade.
+    const raw = fixture("attestation-dstack-testnet.json");
+    assert.equal(parseAttestation(raw).kind, "tdx");
+    assert.deepEqual(parseAttestation(raw), parseAttestation(raw.attestation));
+    assert.equal(parseAttestation({ attestation: { Mock: "Valid" }, accepted_at_seconds: 1 }).kind, "mock");
+  });
+
   it("recognizes a mock attestation with constraints", () => {
     assert.deepEqual(parseAttestation(fixture("attestation-mock.json")), {
       kind: "mock",

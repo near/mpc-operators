@@ -251,7 +251,8 @@
           const variants = await Promise.all(
             parts.map((t) =>
               callView(rpc, "get_attestation", { tls_public_key: t[2] && t[2].tls_public_key })
-                .then((att) => (att == null ? "none" : Object.keys(att)[0]))
+                // Newer contracts wrap it as { attestation: { Dstack | Mock }, accepted_at_seconds }.
+                .then((att) => (att == null ? "none" : Object.keys(att.attestation || att)[0]))
                 .catch(() => "unknown")
             )
           );

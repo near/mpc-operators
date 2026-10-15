@@ -298,13 +298,15 @@
     // attestation, which still appears in `get_tee_accounts` — so we must inspect
     // the attestation itself, per TLS key. Returns "Dstack" | "Mock" | "none",
     // or "unknown" if the lookup fails (so we never mislabel a node).
+    // Newer contracts wrap it as { attestation: { Dstack | Mock }, accepted_at_seconds }.
     async function fetchTeeStatus(rpcUrl, contract, tlsPublicKey) {
       try {
         const att = await callView(rpcUrl, contract, "get_attestation", {
           tls_public_key: tlsPublicKey,
         });
         if (att == null) return "none";
-        return Object.keys(att)[0] || "none"; // "Dstack" or "Mock"
+        const inner = att.attestation && typeof att.attestation === "object" ? att.attestation : att;
+        return Object.keys(inner)[0] || "none"; // "Dstack" or "Mock"
       } catch (e) {
         return "unknown";
       }
