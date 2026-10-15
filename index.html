@@ -23,51 +23,35 @@
     <button id="api-keys" class="button" type="button">API keys</button>
   </nav>
   <header class="bar">
-    <div class="brand">
-      <h1>NEAR MPC Signing Map <span class="site-tag">Mainnet only</span></h1>
-      <p>Chain signatures on <code>v1.signer</code>, live from mainnet</p>
-    </div>
+    <h1>NEAR MPC Signing Map</h1>
     <dl id="stats" class="stats"></dl>
-    <div class="bar-end">
-      <ul id="sources" class="sources" aria-label="Data sources"></ul>
-    </div>
+    <ul id="sources" class="sources" aria-label="Data sources"></ul>
   </header>
   <p id="notice" class="notice" role="status" hidden></p>
 
   <main class="console">
-    <section class="panel panel-requests" aria-labelledby="requests-title">
+    <section class="panel panel-signatures" aria-labelledby="signatures-title">
       <header class="panel-head">
-        <h2 id="requests-title">Requests</h2>
-        <span id="request-count" class="count">0</span>
+        <h2 id="signatures-title">Signatures</h2>
       </header>
-      <p class="panel-sub">Contracts and accounts asking the network to sign</p>
-      <ol id="request-log" class="log"></ol>
+      <p class="panel-sub">Each request and the node that answered it</p>
+      <ol id="signature-log" class="log"></ol>
     </section>
 
     <section class="stage" aria-label="Network map">
       <div id="map" class="map" role="img" aria-label="World map of MPC nodes with animated signing rounds"></div>
       <ul class="legend">
-        <li><span class="swatch swatch-rounds"></span>One color per signature in flight; its rows in the panels match until the round ends</li>
-        <li><span class="swatch-leader"></span>Ringed and tagged: the leader, which gathers the peers' shares and submits <code>respond()</code> <em>(peer set illustrative)</em></li>
+        <li><span class="swatch swatch-rounds"></span>One color per signature in flight; its row in the list matches</li>
         <li><span class="swatch-node"></span>Ring: node runs in Intel TDX</li>
-        <li>Scroll or pinch to zoom, drag to pan</li>
       </ul>
-      <section class="roster-wrap" aria-labelledby="roster-title">
-        <header class="panel-head">
-          <h2 id="roster-title">Nodes</h2>
-          <span class="panel-sub">Sorted by signatures delivered</span>
-        </header>
-        <ul id="roster" class="roster"></ul>
-      </section>
     </section>
 
-    <section class="panel panel-delivered" aria-labelledby="delivered-title">
+    <section class="panel panel-nodes" aria-labelledby="nodes-title">
       <header class="panel-head">
-        <h2 id="delivered-title">Delivered</h2>
-        <span id="delivered-count" class="count">0</span>
+        <h2 id="nodes-title">Nodes</h2>
       </header>
-      <p class="panel-sub">The node that assembled each signature and posted it</p>
-      <ol id="delivered-log" class="log"></ol>
+      <p class="panel-sub">By signatures delivered</p>
+      <ul id="roster" class="roster"></ul>
     </section>
   </main>
 
