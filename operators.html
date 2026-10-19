@@ -85,6 +85,9 @@
       font-family: var(--font-data);
     }
     .quorum-label { color: var(--ink-soft); font-size: 0.85rem; }
+    .chains { font-size: 0.85rem; color: var(--ink-soft); margin: 0 2px 8px; }
+    .chains[hidden] { display: none; }
+    .chains-list { color: var(--ink); }
     .status { font-size: 0.85rem; color: var(--ink-soft); margin: 8px 2px 16px; min-height: 1.2em; }
     .status.error { color: var(--danger); }
     table { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
@@ -131,6 +134,10 @@
     <div class="quorum" id="quorum" hidden>
       <span class="quorum-value" id="quorumValue">—</span>
       <span class="quorum-label">operators required to sign<br />(threshold / total)</span>
+    </div>
+
+    <div class="chains" id="chains" hidden>
+      Supported foreign chain transaction validation: <span class="chains-list" id="chainsList"></span>
     </div>
 
     <div class="status" id="status"></div>
@@ -226,6 +233,8 @@
       status: document.getElementById("status"),
       quorum: document.getElementById("quorum"),
       quorumValue: document.getElementById("quorumValue"),
+      chains: document.getElementById("chains"),
+      chainsList: document.getElementById("chainsList"),
       tbody: document.getElementById("tableBody"),
     };
 
@@ -293,6 +302,15 @@
 
     const fetchState = (rpcUrl, contract) => callView(rpcUrl, contract, "state");
 
+    async function fetchChains(rpcUrl, contract) {
+      try {
+        const chains = await callView(rpcUrl, contract, "get_available_foreign_chains");
+        return Array.isArray(chains) ? chains.map(String) : [];
+      } catch (e) {
+        return [];
+      }
+    }
+
     // A node genuinely runs in a TEE only when its on-chain attestation is a real
     // Intel TDX quote (the `Dstack` variant). Non-TEE nodes submit a `Mock`
     // attestation, which still appears in `get_tee_accounts` — so we must inspect
@@ -355,6 +373,11 @@
       if (threshold == null) { els.quorum.hidden = true; return; }
       els.quorumValue.textContent = threshold + " / " + total;
       els.quorum.hidden = false;
+    }
+
+    function renderChains(chains) {
+      els.chains.hidden = !chains.length;
+      els.chainsList.textContent = chains.join(", ");
     }
 
     // Each participant carries a `.tee` status: "Dstack" | "Mock" | "none" | "unknown".
@@ -438,7 +461,11 @@
       setStatus("Loading " + net.contract + " from " + rpcUrl + " …", false);
       els.refresh.disabled = true;
       try {
-        const state = await fetchState(rpcUrl, net.contract);
+        const [state, chains] = await Promise.all([
+          fetchState(rpcUrl, net.contract),
+          fetchChains(rpcUrl, net.contract),
+        ]);
+        renderChains(chains);
         const result = getParticipants(state);
         if (result === null) {
           const variant = state ? Object.keys(state)[0] : "unknown";
@@ -462,6 +489,7 @@
         );
       } catch (err) {
         renderQuorum(null);
+        renderChains([]);
         renderMessage("Failed to load.");
         setStatus("Error: " + (err && err.message ? err.message : String(err)), true);
       } finally {
