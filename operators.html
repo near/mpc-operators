@@ -302,7 +302,6 @@
 
     const fetchState = (rpcUrl, contract) => callView(rpcUrl, contract, "state");
 
-    // Chain names the contract accepts foreign-chain requests for; [] if unsupported.
     async function fetchChains(rpcUrl, contract) {
       try {
         const chains = await callView(rpcUrl, contract, "get_available_foreign_chains");
