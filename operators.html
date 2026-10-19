@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -7,10 +8,14 @@
   <title>NEAR MPC Participants</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+  <link rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
   <link rel="stylesheet" href="site.css">
   <style>
-    * { box-sizing: border-box; }
+    * {
+      box-sizing: border-box;
+    }
+
     body {
       margin: 0;
       font-family: var(--font-body);
@@ -18,9 +23,24 @@
       color: var(--ink);
       line-height: 1.5;
     }
-    .wrap { max-width: 960px; margin: 0 auto; padding: 32px 20px 64px; }
-    h1 { font-size: 1.5rem; margin: 0 0 4px; }
-    .sub { color: var(--ink-soft); margin: 0 0 24px; font-size: 0.9rem; }
+
+    .wrap {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 32px 20px 64px;
+    }
+
+    h1 {
+      font-size: 1.5rem;
+      margin: 0 0 4px;
+    }
+
+    .sub {
+      color: var(--ink-soft);
+      margin: 0 0 24px;
+      font-size: 0.9rem;
+    }
+
     .controls {
       display: flex;
       flex-wrap: wrap;
@@ -32,7 +52,14 @@
       padding: 14px 16px;
       margin-bottom: 16px;
     }
-    .toggle { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+
+    .toggle {
+      display: inline-flex;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
     .toggle button {
       background: transparent;
       color: var(--ink-soft);
@@ -41,9 +68,26 @@
       font-size: 0.9rem;
       cursor: pointer;
     }
-    .toggle button.active { background: var(--accent); color: var(--on-accent); }
-    .rpc-field { display: flex; flex: 1 1 320px; gap: 8px; align-items: center; min-width: 280px; }
-    .rpc-field label { color: var(--ink-soft); font-size: 0.85rem; white-space: nowrap; }
+
+    .toggle button.active {
+      background: var(--accent);
+      color: var(--on-accent);
+    }
+
+    .rpc-field {
+      display: flex;
+      flex: 1 1 320px;
+      gap: 8px;
+      align-items: center;
+      min-width: 280px;
+    }
+
+    .rpc-field label {
+      color: var(--ink-soft);
+      font-size: 0.85rem;
+      white-space: nowrap;
+    }
+
     input[type="text"] {
       flex: 1;
       background: var(--ground);
@@ -54,7 +98,11 @@
       font-size: 0.85rem;
       font-family: var(--font-data);
     }
-    input[type="text"][hidden] { display: none; }
+
+    input[type="text"][hidden] {
+      display: none;
+    }
+
     select {
       background: var(--ground);
       border: 1px solid var(--line);
@@ -64,6 +112,7 @@
       font-size: 0.85rem;
       cursor: pointer;
     }
+
     .btn {
       background: var(--surface-raised);
       color: var(--ink);
@@ -73,9 +122,22 @@
       font-size: 0.9rem;
       cursor: pointer;
     }
-    .btn:hover { border-color: var(--accent-ink); }
-    .quorum { display: flex; align-items: center; gap: 16px; margin: 4px 2px 16px; }
-    .quorum[hidden] { display: none; }
+
+    .btn:hover {
+      border-color: var(--accent-ink);
+    }
+
+    .quorum {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin: 4px 2px 16px;
+    }
+
+    .quorum[hidden] {
+      display: none;
+    }
+
     .quorum-value {
       font-size: 2.6rem;
       font-weight: 700;
@@ -84,26 +146,113 @@
       color: var(--accent-ink);
       font-family: var(--font-data);
     }
-    .quorum-label { color: var(--ink-soft); font-size: 0.85rem; }
-    .status { font-size: 0.85rem; color: var(--ink-soft); margin: 8px 2px 16px; min-height: 1.2em; }
-    .status.error { color: var(--danger); }
-    table { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
-    th, td { text-align: left; padding: 12px 14px; border-bottom: 1px solid var(--line); font-size: 0.9rem; vertical-align: top; }
-    th { color: var(--ink-soft); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; font-size: 0.72rem; }
-    tr:last-child td { border-bottom: none; }
-    td.account, td.url { font-family: var(--font-data); font-size: 0.82rem; }
-    td.url a { color: var(--accent-ink); text-decoration: none; word-break: break-all; }
-    td.url a:hover { text-decoration: underline; }
-    .empty td { color: var(--ink-soft); text-align: center; padding: 24px; }
-    .tee { white-space: nowrap; font-size: 0.8rem; font-weight: 600; }
-    .tee.yes { color: var(--accent-ink); }
-    .tee.no { color: var(--ink-soft); }
-    .tee.unknown { color: var(--ink-soft); }
+
+    .quorum-label {
+      color: var(--ink-soft);
+      font-size: 0.85rem;
+    }
+
+    .chains {
+      font-size: 0.85rem;
+      color: var(--ink-soft);
+      margin: 0 2px 8px;
+    }
+
+    .chains[hidden] {
+      display: none;
+    }
+
+    .chains-list {
+      color: var(--ink);
+    }
+
+    .status {
+      font-size: 0.85rem;
+      color: var(--ink-soft);
+      margin: 8px 2px 16px;
+      min-height: 1.2em;
+    }
+
+    .status.error {
+      color: var(--danger);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    th,
+    td {
+      text-align: left;
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--line);
+      font-size: 0.9rem;
+      vertical-align: top;
+    }
+
+    th {
+      color: var(--ink-soft);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      font-size: 0.72rem;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    td.account,
+    td.url {
+      font-family: var(--font-data);
+      font-size: 0.82rem;
+    }
+
+    td.url a {
+      color: var(--accent-ink);
+      text-decoration: none;
+      word-break: break-all;
+    }
+
+    td.url a:hover {
+      text-decoration: underline;
+    }
+
+    .empty td {
+      color: var(--ink-soft);
+      text-align: center;
+      padding: 24px;
+    }
+
+    .tee {
+      white-space: nowrap;
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+
+    .tee.yes {
+      color: var(--accent-ink);
+    }
+
+    .tee.no {
+      color: var(--ink-soft);
+    }
+
+    .tee.unknown {
+      color: var(--ink-soft);
+    }
   </style>
 </head>
+
 <body>
   <nav class="site-nav" aria-label="Site">
-    <a class="site-brand" href="https://nearone.org"><img src="near-one-logo.svg" alt="Near One" width="80" height="28"></a>
+    <a class="site-brand" href="https://nearone.org"><img src="near-one-logo.svg" alt="Near One" width="80"
+        height="28"></a>
     <ul>
       <li><a href="./">Live map <span class="site-tag">mainnet</span></a></li>
       <li><a href="operators.html" aria-current="page">Operators</a></li>
@@ -131,6 +280,10 @@
     <div class="quorum" id="quorum" hidden>
       <span class="quorum-value" id="quorumValue">—</span>
       <span class="quorum-label">operators required to sign<br />(threshold / total)</span>
+    </div>
+
+    <div class="chains" id="chains" hidden>
+      Supported chains: <span class="chains-list" id="chainsList"></span>
     </div>
 
     <div class="status" id="status"></div>
@@ -162,14 +315,14 @@
     const PRESETS = {
       mainnet: [
         { label: "FastNear (recommended)", url: "https://rpc.mainnet.fastnear.com" },
-        { label: "NEAR.org",               url: "https://rpc.mainnet.near.org" },
-        { label: "Lava Network",           url: "https://near.lava.build" },
-        { label: "dRPC",                   url: "https://near.drpc.org" },
+        { label: "NEAR.org", url: "https://rpc.mainnet.near.org" },
+        { label: "Lava Network", url: "https://near.lava.build" },
+        { label: "dRPC", url: "https://near.drpc.org" },
       ],
       testnet: [
         { label: "FastNear (recommended)", url: "https://rpc.testnet.fastnear.com" },
-        { label: "NEAR.org",               url: "https://rpc.testnet.near.org" },
-        { label: "dRPC",                   url: "https://near-testnet.drpc.org" },
+        { label: "NEAR.org", url: "https://rpc.testnet.near.org" },
+        { label: "dRPC", url: "https://near-testnet.drpc.org" },
       ],
     };
     const CUSTOM = "__custom__";
@@ -226,6 +379,8 @@
       status: document.getElementById("status"),
       quorum: document.getElementById("quorum"),
       quorumValue: document.getElementById("quorumValue"),
+      chains: document.getElementById("chains"),
+      chainsList: document.getElementById("chainsList"),
       tbody: document.getElementById("tableBody"),
     };
 
@@ -293,6 +448,15 @@
 
     const fetchState = (rpcUrl, contract) => callView(rpcUrl, contract, "state");
 
+    async function fetchChains(rpcUrl, contract) {
+      try {
+        const chains = await callView(rpcUrl, contract, "get_available_foreign_chains");
+        return Array.isArray(chains) ? chains.map(String) : [];
+      } catch (e) {
+        return [];
+      }
+    }
+
     // A node genuinely runs in a TEE only when its on-chain attestation is a real
     // Intel TDX quote (the `Dstack` variant). Non-TEE nodes submit a `Mock`
     // attestation, which still appears in `get_tee_accounts` — so we must inspect
@@ -355,6 +519,11 @@
       if (threshold == null) { els.quorum.hidden = true; return; }
       els.quorumValue.textContent = threshold + " / " + total;
       els.quorum.hidden = false;
+    }
+
+    function renderChains(chains) {
+      els.chains.hidden = !chains.length;
+      els.chainsList.textContent = chains.join(", ");
     }
 
     // Each participant carries a `.tee` status: "Dstack" | "Mock" | "none" | "unknown".
@@ -438,7 +607,11 @@
       setStatus("Loading " + net.contract + " from " + rpcUrl + " …", false);
       els.refresh.disabled = true;
       try {
-        const state = await fetchState(rpcUrl, net.contract);
+        const [state, chains] = await Promise.all([
+          fetchState(rpcUrl, net.contract),
+          fetchChains(rpcUrl, net.contract),
+        ]);
+        renderChains(chains);
         const result = getParticipants(state);
         if (result === null) {
           const variant = state ? Object.keys(state)[0] : "unknown";
@@ -462,6 +635,7 @@
         );
       } catch (err) {
         renderQuorum(null);
+        renderChains([]);
         renderMessage("Failed to load.");
         setStatus("Error: " + (err && err.message ? err.message : String(err)), true);
       } finally {
@@ -493,4 +667,5 @@
     load();
   </script>
 </body>
+
 </html>
