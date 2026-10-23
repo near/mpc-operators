@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-14T06:09:57.593Z",
+  "generatedAt": "2026-10-23T05:45:14.432Z",
   "nodes": {
     "astrostakers-mainnet.near": {
       "host": "near-mainnet-mpc.astrostakers.com",
@@ -20,16 +20,6 @@
       "country": "Czechia",
       "countryCode": "CZ",
       "provider": "Datacamp Limited"
-    },
-    "blacksandtech.near": {
-      "host": "near-mpc-mainnet.svc.blacksand.xyz",
-      "ip": "57.130.27.94",
-      "lat": 50.6942104,
-      "lon": 3.1745629,
-      "city": "Roubaix",
-      "country": "France",
-      "countryCode": "FR",
-      "provider": "OVH SAS"
     },
     "everstake-mpc-1.near": {
       "host": "nearmpc-mainnet-tdx.everstake.com",
