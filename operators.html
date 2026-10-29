@@ -90,6 +90,7 @@
     .chains-list { color: var(--ink); }
     .status { font-size: 0.85rem; color: var(--ink-soft); margin: 8px 2px 16px; min-height: 1.2em; }
     .status.error { color: var(--danger); }
+    .table-scroll { overflow-x: auto; }
     table { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
     th, td { text-align: left; padding: 12px 14px; border-bottom: 1px solid var(--line); font-size: 0.9rem; vertical-align: top; }
     th { color: var(--ink-soft); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; font-size: 0.72rem; }
@@ -142,21 +143,23 @@
 
     <div class="status" id="status"></div>
 
-    <table>
-      <thead>
-        <tr>
-          <th>Operator Name</th>
-          <th>Account</th>
-          <th>URL</th>
-          <th>TEE</th>
-        </tr>
-      </thead>
-      <tbody id="tableBody"></tbody>
-    </table>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Operator Name</th>
+            <th>Account</th>
+            <th>URL</th>
+            <th>TEE</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
   </div>
 
   <script type="module">
-    import { keyHeaders, onKeysChange } from "./site.js";
+    import { fetchWithKey, onKeysChange } from "./site.js";
 
     // --- Config -----------------------------------------------------------
     const NETWORKS = {
@@ -186,7 +189,6 @@
     const OPERATORS = {
       // mainnet
       "astrostakers-mainnet.near": "Astrostakers",
-      "blacksandtech.near": "BlackSand",
       "everstake-mpc-1.near": "Everstake",
       "greenfield-mpc01.near": "Greenfield",
       "hashkeympc.near": "HashKey Cloud",
@@ -281,9 +283,9 @@
           args_base64: btoa(JSON.stringify(args || {})),
         },
       };
-      const resp = await fetch(rpcUrl, {
+      const resp = await fetchWithKey(rpcUrl, {
         method: "POST",
-        headers: { "Content-Type": "application/json", ...keyHeaders(rpcUrl) },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
       if (!resp.ok) throw new Error("HTTP " + resp.status + " " + resp.statusText);
@@ -331,11 +333,13 @@
     }
 
     // Extract the participant set and signing threshold from the contract state.
-    // Returns { threshold, participants } or null if not in the Running state.
+    // While resharing, the previous set keeps signing, so that one is shown.
+    // Returns { threshold, participants } or null in any other state.
     function getParticipants(state) {
-      const params = state && state.Running && state.Running.parameters;
+      const running = state && (state.Running || (state.Resharing && state.Resharing.previous_running_state));
+      const params = running && running.parameters;
       const tuples = params && params.participants && params.participants.participants;
-      if (!Array.isArray(tuples)) return null; // not in Running state
+      if (!Array.isArray(tuples)) return null; // neither Running nor Resharing
       return {
         threshold: typeof params.threshold === "number" ? params.threshold : null,
         participants: tuples.map((t) => ({
@@ -347,19 +351,20 @@
       };
     }
 
-    // Path appended to each participant endpoint.
-    const LINK_PATH = "/debug/signatures";
+    // Each node serves a health page over http on port 8080. The registered
+    // URL's port is the node's P2P port (often 80), which doesn't speak HTTP.
+    const HEALTH_PORT = 8080;
+    const HEALTH_PATH = "/health";
 
-    // Normalize a participant URL for linking: force the http scheme and
-    // append port 8080 unless a port is already specified explicitly.
+    // Link to a participant's health page: same host, http, port 8080.
     function buildLink(raw) {
       let s = String(raw || "").trim();
       if (!s) return "";
       s = s.replace(/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//, ""); // drop any scheme
       const slash = s.indexOf("/");
-      let authority = slash === -1 ? s : s.slice(0, slash); // strip any path
-      if (!/:\d+$/.test(authority)) authority += ":8080"; // no explicit port
-      return "http://" + authority + LINK_PATH;
+      const authority = slash === -1 ? s : s.slice(0, slash); // strip any path
+      const host = authority.replace(/:\d+$/, ""); // drop the P2P port
+      return "http://" + host + ":" + HEALTH_PORT + HEALTH_PATH;
     }
 
     // --- Render -----------------------------------------------------------
@@ -408,6 +413,7 @@
             a.href = href;
             a.target = "_blank";
             a.rel = "noopener noreferrer";
+            a.title = "Health page: " + href;
             a.textContent = p.url;
             urlTd.appendChild(a);
           } else {
@@ -484,7 +490,8 @@
         const inTee = participants.filter((p) => p.tee === "Dstack").length;
         setStatus(
           participants.length + " participants · " + inTee + "/" + participants.length +
-          " in TEE · " + net.contract + " · updated " + new Date().toLocaleTimeString(),
+          " in TEE · " + net.contract + (state.Resharing ? " · resharing" : "") +
+          " · updated " + new Date().toLocaleTimeString(),
           false
         );
       } catch (err) {

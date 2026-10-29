@@ -3,7 +3,7 @@ import { describe, it } from "node:test";
 
 import { fnv1a, pickPeers } from "../../src/lib/cohort.js";
 import * as fmt from "../../src/lib/format.js";
-import { hostOf, isIPv4, spreadOverlapping } from "../../src/lib/geo.js";
+import { healthUrl, hostOf, isIPv4, spreadOverlapping } from "../../src/lib/geo.js";
 
 const ACCOUNTS = Array.from({ length: 17 }, (_, i) => `node-${i}.near`);
 
@@ -51,6 +51,14 @@ describe("pickPeers", () => {
   it("copes with fewer accounts than the threshold, and threshold 0", () => {
     assert.deepEqual(pickPeers("s", "a", ["a", "b"], 5), ["b"]);
     assert.deepEqual(pickPeers("s", "a", ["a", "b"], 0), []);
+  });
+});
+
+describe("healthUrl", () => {
+  it("points at port 8080 over http, whatever port and scheme were registered", () => {
+    assert.equal(healthUrl("https://57.129.86.53:80"), "http://57.129.86.53:8080/health");
+    assert.equal(healthUrl("http://near-mainnet-mpc.astrostakers.com"), "http://near-mainnet-mpc.astrostakers.com:8080/health");
+    assert.equal(healthUrl("not a url"), null);
   });
 });
 

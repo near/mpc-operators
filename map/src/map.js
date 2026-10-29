@@ -33,6 +33,8 @@ const SVG_NS = "http://www.w3.org/2000/svg";
 const ROUND_MS = 3600;
 const MARKER_SPACING_PX = 17;
 const MAX_ZOOM = 16;
+/** A press that travels further than this is a drag, not a click. */
+const CLICK_SLOP_PX = 4;
 /** Size of the --round-N palette in site.css. */
 const ROUND_COLORS = 5;
 
@@ -414,7 +416,10 @@ export class NetworkMap {
       e.preventDefault();
       const rate = e.deltaMode === 1 ? 0.05 : e.deltaMode === 2 ? 1 : 0.002;
       const p = local(e);
-      this.#zoomAt(2 ** (-e.deltaY * rate * (e.ctrlKey ? 10 : 1)), p.x, p.y);
+      // Pinches send tiny deltas, hence the ×10; capped so a mouse notch with
+      // Ctrl held zooms about 1.4× rather than 4×.
+      const step = clamp(-e.deltaY * rate * (e.ctrlKey ? 10 : 1), -0.5, 0.5);
+      this.#zoomAt(2 ** step, p.x, p.y);
     }, { passive: false });
 
     el.addEventListener("dblclick", (e) => {
@@ -429,6 +434,9 @@ export class NetworkMap {
     const pointers = new Map();
     /** @type {(Point & { dist: number }) | null} */
     let last = null;
+    /** Where the current press started, and the furthest it has moved since. */
+    let pressedAt = { x: 0, y: 0 };
+    let travel = 0;
     const gesture = () => {
       const [a, b] = pointers.values();
       if (!a) return null;
@@ -444,6 +452,10 @@ export class NetworkMap {
 
     el.addEventListener("pointerdown", (e) => {
       if (e.button !== 0 || (e.target instanceof Element && e.target.closest(".map-controls"))) return;
+      if (pointers.size === 0) {
+        pressedAt = local(e);
+        travel = 0;
+      }
       pointers.set(e.pointerId, local(e));
       last = gesture();
       // Markers are rebuilt while dragging; keep the gesture on the container.
@@ -451,7 +463,9 @@ export class NetworkMap {
     });
     el.addEventListener("pointermove", (e) => {
       if (!pointers.has(e.pointerId)) return;
-      pointers.set(e.pointerId, local(e));
+      const at = local(e);
+      pointers.set(e.pointerId, at);
+      travel = Math.max(travel, Math.hypot(at.x - pressedAt.x, at.y - pressedAt.y));
       const now = gesture();
       if (!now || !last) return;
       const { k, x, y } = this.#view;
@@ -464,6 +478,18 @@ export class NetworkMap {
     });
     el.addEventListener("pointerup", release);
     el.addEventListener("pointercancel", release);
+    // With the pointer captured, clicks land on the container rather than the
+    // marker under them, so markers are picked out here.
+    el.addEventListener("click", (e) => {
+      if (travel > CLICK_SLOP_PX) return;
+      const marker = document.elementFromPoint(e.clientX, e.clientY)?.closest("g.node");
+      const account = marker?.getAttribute("data-account");
+      if (account) this.#onSelect(account);
+    });
+    // A selection made elsewhere can still cover the map (select all, or a
+    // drag from the panels). Pressing on it would start a native drag, which
+    // cancels the pointer and freezes the pan, so a drag here only ever pans.
+    el.addEventListener("dragstart", (e) => e.preventDefault());
   }
 
   // ── Drawing ─────────────────────────────────────────────────────────────
@@ -560,7 +586,7 @@ export class NetworkMap {
       g.addEventListener("pointerleave", leave);
       g.addEventListener("focus", enter);
       g.addEventListener("blur", leave);
-      g.addEventListener("click", () => this.#onSelect(node.account));
+      // Mouse and touch clicks are handled on the container (#bindGestures).
       g.addEventListener("keydown", (e) => {
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();
