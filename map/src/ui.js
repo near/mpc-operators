@@ -5,6 +5,7 @@
 
 import { domainLabel } from "./lib/contract.js";
 import * as fmt from "./lib/format.js";
+import { healthUrl } from "./lib/geo.js";
 
 /**
  * @typedef {import("./lib/ledger.js").SignRequest} SignRequest
@@ -275,6 +276,8 @@ export class Panels {
     const response = r.response;
     const dest = r.destination;
     const chain = dest ? fmt.chainInfo(dest.chain) : null;
+    // Chains without a known explorer get the bare hash.
+    const destTx = dest && chain ? chain.tx(dest.txn) : null;
     const where = response ? locations.get(response.node) : undefined;
     const latency = latencyMs(r);
     const when = (/** @type {number} */ ms) => new Date(ms).toLocaleString();
@@ -296,7 +299,7 @@ export class Panels {
         ? field("Respond", link(fmt.nearTxUrl(response.txHash), fmt.middle(response.txHash, 8), undefined, response.txHash), ` · ${when(response.timestampMs)}`, latency !== null ? ` · ${fmt.seconds(latency)} after the request` : "")
         : []),
       ...(dest && chain
-        ? field("Destination", `${chain.name} · `, h("span", { title: dest.address }, fmt.middle(dest.address, 8)), " · ", link(chain.tx(dest.txn), "tx ↗", undefined, dest.txn))
+        ? field("Destination", `${chain.name} · `, h("span", { title: dest.address }, fmt.middle(dest.address, 8)), " · ", destTx ? link(destTx, "tx ↗", undefined, dest.txn) : h("span", { title: dest.txn }, fmt.middle(dest.txn, 8)))
         : []),
     );
   }
@@ -430,9 +433,10 @@ export class Panels {
     const count = s?.count ?? 0;
     const share = total > 0 ? ` (${Math.round((count / total) * 100)}% of the window)` : "";
     const med = s ? median(s.latencies) : null;
+    const health = healthUrl(p.url);
     return h("dl", { class: "facts" },
       ...field("Account", link(fmt.nearAccountUrl(p.account), p.account)),
-      ...field("Node URL", p.url ? link(p.url, p.url) : "—"),
+      ...field("Node URL", health ? link(health, p.url, undefined, `Health page: ${health}`) : p.url || "—"),
       ...field("Location", where ? `${where.city}, ${where.country}` : where === null ? "Not in the data file yet" : "Locating…"),
       ...field("Hosting", where ? `${where.provider} · ${where.ip}` : "—"),
       ...field("TEE", `${teeLine}${expires}`),

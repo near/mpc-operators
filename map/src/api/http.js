@@ -33,12 +33,22 @@ export async function fetchJson(service, url, { body, apiKey, headers = {}, time
   if (body !== undefined) allHeaders["content-type"] = "application/json";
   if (apiKey) allHeaders.authorization = `Bearer ${apiKey}`;
 
-  const response = await fetch(url, {
-    method: body === undefined ? "GET" : "POST",
-    headers: allHeaders,
-    body: body === undefined ? undefined : JSON.stringify(body),
-    signal: AbortSignal.timeout(timeoutMs),
-  });
+  let response;
+  try {
+    response = await fetch(url, {
+      method: body === undefined ? "GET" : "POST",
+      headers: allHeaders,
+      body: body === undefined ? undefined : JSON.stringify(body),
+      signal: AbortSignal.timeout(timeoutMs),
+    });
+  } catch (error) {
+    // A service that rejects the key may answer without CORS headers, which
+    // the browser reports as a bare network error.
+    if (apiKey && error instanceof TypeError) {
+      throw new Error(`${service}: ${error.message}. If this keeps happening, check the API key under API keys.`);
+    }
+    throw error;
+  }
   if (!response.ok) {
     const text = await response.text().catch(() => "");
     throw new HttpError(service, response.status, text.slice(0, 200));

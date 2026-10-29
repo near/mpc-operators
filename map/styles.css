@@ -231,8 +231,10 @@ body > .site-nav {
 }
 .map > canvas, .map > svg { position: absolute; inset: 0; inline-size: 100%; block-size: 100%; }
 /* One finger scrolls the page while the map shows its home view; once it is
-   zoomed or panned, it pans the map instead. A mouse can drag at any time. */
-.map { touch-action: pan-x pan-y; cursor: grab; }
+   zoomed or panned, it pans the map instead. A mouse can drag at any time.
+   Dragging must not select the labels: the next drag would pick the
+   selection up as a native drag-and-drop and stop panning. */
+.map { touch-action: pan-x pan-y; cursor: grab; -webkit-user-select: none; user-select: none; }
 .map.is-zoomed { touch-action: none; }
 .map.is-dragging { cursor: grabbing; }
 .map-controls {

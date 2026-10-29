@@ -15,6 +15,17 @@ export function hostOf(url) {
   }
 }
 
+/**
+ * A node's health page. Nodes register their P2P address, whose port (often
+ * 80) doesn't speak HTTP; the health page is on port 8080 of the same host.
+ * @param {string} url
+ * @returns {string | null}
+ */
+export function healthUrl(url) {
+  const host = hostOf(url);
+  return host === null ? null : `http://${host}:8080/health`;
+}
+
 /** @param {string} host */
 export function isIPv4(host) {
   const parts = host.split(".");

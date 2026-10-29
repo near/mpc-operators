@@ -56,6 +56,12 @@ export class Feed extends EventTarget {
   #seenTx = new Set();
   /** @type {Map<SourceName, ReturnType<typeof setTimeout>>} */
   #timers = new Map();
+  /**
+   * When each source is next due. Survives hiding and showing the tab, so
+   * flipping back to it neither skips a back-off nor bursts past a rate limit.
+   * @type {Map<SourceName, number>}
+   */
+  #due = new Map();
   #keys;
   #backfilled = false;
   #generation = 0;
@@ -73,15 +79,25 @@ export class Feed extends EventTarget {
   /** @param {ApiKeys} keys */
   setKeys(keys) {
     this.#keys = keys;
+    // New keys mean new limits; try every source right away.
+    this.#due.clear();
     this.start();
   }
 
   start() {
     this.#stopAll();
+    if (document.hidden) return;
     const generation = ++this.#generation;
-    this.#loop("network", generation, () => this.#pollNetwork());
-    this.#loop("requests", generation, () => this.#pollRequests());
-    this.#loop("decode", generation, () => this.#pollDecoded());
+    /** @type {[SourceName, () => Promise<string>][]} */
+    const loops = [
+      ["network", () => this.#pollNetwork()],
+      ["requests", () => this.#pollRequests()],
+      ["decode", () => this.#pollDecoded()],
+    ];
+    for (const [source, tick] of loops) {
+      const wait = Math.max(0, (this.#due.get(source) ?? 0) - Date.now());
+      this.#timers.set(source, setTimeout(() => this.#loop(source, generation, tick), wait));
+    }
   }
 
   #stopAll() {
@@ -100,22 +116,26 @@ export class Feed extends EventTarget {
     const cadence = CADENCE_MS[source];
     const hasKey = source === "decode" ? Boolean(this.#keys.nearblocks) : Boolean(this.#keys.fastnear);
     let delay = hasKey ? cadence.withKey : cadence.withoutKey;
+    /** @type {[SourceState, string]} */
+    let status;
     try {
-      const message = await tick();
-      this.#setStatus(source, "ok", message);
+      status = ["ok", await tick()];
     } catch (error) {
       if (error instanceof HttpError && error.rateLimited) {
         delay = cadence.limited;
-        this.#setStatus(source, "limited", `${error.service} rate limit hit. Retrying in ${Math.round(delay / 60_000)} min${hasKey ? "" : ". Add an API key (top right) for more headroom"}.`);
+        status = ["limited", `${error.service} rate limit hit. Retrying in ${Math.round(delay / 60_000)} min${hasKey ? "" : ". Add an API key (top right) for more headroom"}.`];
       } else if (error instanceof HttpError && error.unauthorized) {
         delay = cadence.limited;
-        this.#setStatus(source, "error", `${error.service} rejected the API key. Check it under API keys.`);
+        status = ["error", `${error.service} rejected the API key. Check it under API keys.`];
       } else {
         delay = Math.min(delay * 4, 60_000);
-        this.#setStatus(source, "error", error instanceof Error ? error.message : String(error));
+        status = ["error", error instanceof Error ? error.message : String(error)];
       }
     }
+    // Stopped or restarted while this tick was in flight; the newer loop reports.
     if (generation !== this.#generation) return;
+    this.#setStatus(source, ...status);
+    this.#due.set(source, Date.now() + delay);
     this.#timers.set(source, setTimeout(() => this.#loop(source, generation, tick), delay));
   }
 

@@ -13,15 +13,15 @@ describe("parseSignerState", () => {
     const state = parseSignerState(STATE);
     assert.equal(state.phase, "running");
     assert.equal(state.threshold, 11);
-    assert.equal(state.epochId, 13);
-    assert.equal(state.participants.length, 17);
+    assert.equal(state.epochId, 14);
+    assert.equal(state.participants.length, 16);
     assert.deepEqual(state.participants[0], {
-      account: "blacksandtech.near",
-      id: 0,
-      url: "https://multichain-mainnet-0.near.blksnd.xyz",
-      tlsPublicKey: "ed25519:2XPuwqhg71RXRiTUMKGapd8FYWgXnxVvydYBK9tS1ex2",
+      account: "mpc-lgns.near",
+      id: 4,
+      url: "http://137.74.108.92:80",
+      tlsPublicKey: "ed25519:6xY2u5RHiBM5sdNnojwMjqKEBgFLmMesnyPovmSXqFFp",
     });
-    assert.equal(new Set(state.participants.map((p) => p.account)).size, 17, "accounts are unique");
+    assert.equal(new Set(state.participants.map((p) => p.account)).size, 16, "accounts are unique");
     assert.deepEqual(
       state.domains.map((d) => [d.id, d.protocol, d.purpose, d.threshold]),
       [
@@ -37,7 +37,7 @@ describe("parseSignerState", () => {
     const resharing = { Resharing: { previous_running_state: STATE.Running, resharing_key: {} } };
     const state = parseSignerState(resharing);
     assert.equal(state.phase, "resharing");
-    assert.equal(state.participants.length, 17);
+    assert.equal(state.participants.length, 16);
   });
 
   it("explains when the contract is not signing", () => {

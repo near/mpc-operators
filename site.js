@@ -16,6 +16,13 @@ const KEY_HOSTS = {
 };
 
 /**
+ * Keys saved while storage was unavailable, so they still apply until the
+ * page closes.
+ * @type {ApiKeys}
+ */
+let unsaved = { fastnear: "", nearblocks: "" };
+
+/**
  * @param {unknown} v
  * @returns {string}
  */
@@ -29,8 +36,8 @@ export function loadKeys() {
       return { fastnear: stringOr(stored.fastnear), nearblocks: stringOr(stored.nearblocks) };
     }
   } catch {
-    // Private windows and blocked site data make storage unavailable; the
-    // pages work without keys.
+    // Private windows and blocked site data make storage unavailable.
+    return { ...unsaved };
   }
   return { fastnear: "", nearblocks: "" };
 }
@@ -45,7 +52,7 @@ export function saveKeys(keys) {
     if (trimmed.fastnear || trimmed.nearblocks) localStorage.setItem(STORAGE_KEY, JSON.stringify(trimmed));
     else localStorage.removeItem(STORAGE_KEY);
   } catch {
-    // Storage is a convenience here; nothing depends on it succeeding.
+    unsaved = trimmed;
   }
   window.dispatchEvent(new CustomEvent(CHANGE_EVENT, { detail: trimmed }));
   return trimmed;
@@ -63,24 +70,32 @@ export function onKeysChange(listener) {
 }
 
 /**
- * The Authorization header for `url`, if the user has a key for its service.
+ * `fetch`, with the user's key attached if they have one for the URL's service.
  * @param {string} url
- * @returns {Record<string, string>}
+ * @param {RequestInit} [init]
+ * @returns {Promise<Response>}
  */
-export function keyHeaders(url) {
+export async function fetchWithKey(url, init = {}) {
   let host;
   try {
     host = new URL(url).hostname;
   } catch {
-    return {};
+    return fetch(url, init);
   }
   const keys = loadKeys();
-  for (const [service, domain] of /** @type {[keyof ApiKeys, string][]} */ (Object.entries(KEY_HOSTS))) {
-    if (keys[service] && (host === domain || host.endsWith(`.${domain}`))) {
-      return { authorization: `Bearer ${keys[service]}` };
-    }
+  const service = /** @type {[keyof ApiKeys, string][]} */ (Object.entries(KEY_HOSTS))
+    .find(([s, domain]) => keys[s] && (host === domain || host.endsWith(`.${domain}`)))?.[0];
+  if (!service) return fetch(url, init);
+
+  const headers = new Headers(init.headers);
+  headers.set("authorization", `Bearer ${keys[service]}`);
+  try {
+    return await fetch(url, { ...init, headers });
+  } catch (error) {
+    // A service that rejects the key may answer without CORS headers, which
+    // the browser reports as a bare network error.
+    throw new Error(`${error instanceof Error ? error.message : error}. If this keeps happening, check your API key under API keys.`);
   }
-  return {};
 }
 
 // ── Dialog ────────────────────────────────────────────────────────────────
