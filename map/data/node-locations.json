@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-23T05:45:14.432Z",
+  "generatedAt": "2026-11-09T05:39:38.161Z",
   "nodes": {
     "astrostakers-mainnet.near": {
       "host": "near-mainnet-mpc.astrostakers.com",
@@ -60,16 +60,6 @@
       "country": "United States",
       "countryCode": "US",
       "provider": "Phoenixnap LLC"
-    },
-    "mpc-lgns.near": {
-      "host": "137.74.108.92",
-      "ip": "137.74.108.92",
-      "lat": 50.9865142,
-      "lon": 2.128066,
-      "city": "Gravelines",
-      "country": "France",
-      "countryCode": "FR",
-      "provider": "OVH SAS"
     },
     "mpch-01.near": {
       "host": "mpch-mpc-near-m-01.near.mainnet.mpch.io",
