@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-09T05:39:38.161Z",
+  "generatedAt": "2026-11-10T05:39:38.482Z",
   "nodes": {
     "astrostakers-mainnet.near": {
       "host": "near-mainnet-mpc.astrostakers.com",
@@ -60,6 +60,16 @@
       "country": "United States",
       "countryCode": "US",
       "provider": "Phoenixnap LLC"
+    },
+    "mpc-lgns.near": {
+      "host": "62.112.11.124",
+      "ip": "62.112.11.124",
+      "lat": 51.9967121,
+      "lon": 4.2272924,
+      "city": "Gemeente Westland",
+      "country": "Netherlands",
+      "countryCode": "NL",
+      "provider": "WorldStream B.V."
     },
     "mpch-01.near": {
       "host": "mpch-mpc-near-m-01.near.mainnet.mpch.io",
